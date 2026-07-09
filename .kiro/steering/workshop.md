@@ -1,3 +1,7 @@
+---
+inclusion: always
+---
+
 # Fuego Fridays Workshop
 
 This is a starter template for the Fuego Fridays workshop by AWS Applied AI Solutions.
