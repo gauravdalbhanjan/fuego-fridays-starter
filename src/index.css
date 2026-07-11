@@ -16,54 +16,48 @@
  */
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
-  --background: #faf9f7; /* paper */
-  --foreground: #1b1a18; /* ink */
+  /* Alexa-style deep dark palette */
+  --background: #0d1117;
+  --foreground: #e6edf3;
 
-  --card: #ffffff;
-  --card-foreground: #1b1a18;
+  --card: #161b22;
+  --card-foreground: #e6edf3;
 
-  --popover: #ffffff;
-  --popover-foreground: #1b1a18;
+  --popover: #1c2128;
+  --popover-foreground: #e6edf3;
 
-  /*
-   * --primary is near-black ink, like shadcn's default AND like humorphism.com
-   * itself, where orange is a *sparing* accent — not the primary surface color.
-   * This keeps buttons / bubbles / emphasis calm and neutral. Reach for the
-   * orange deliberately via `--fuego-*` (or bg-fuego-500, text-primary is ink).
-   */
-  --primary: #1b1a18; /* ink */
-  --primary-foreground: #faf9f7;
+  --primary: #31a8ff; /* Alexa blue */
+  --primary-foreground: #ffffff;
 
-  --secondary: #f5f3ef;
-  --secondary-foreground: #1b1a18;
+  --secondary: #1c2128;
+  --secondary-foreground: #e6edf3;
 
-  --muted: #f5f3ef;
-  --muted-foreground: #57544d;
+  --muted: #1c2128;
+  --muted-foreground: #8b949e;
 
-  --accent: #ece9e4;
-  --accent-foreground: #1b1a18;
+  --accent: #21262d;
+  --accent-foreground: #e6edf3;
 
-  --destructive: #ff3340;
+  --destructive: #f85149;
   --destructive-foreground: #ffffff;
 
-  --border: #ece9e4; /* hairline */
-  --input: #e2dfda;
-  --ring: #ff6200; /* focus ring stays the fuego accent */
+  --border: #30363d;
+  --input: #21262d;
+  --ring: #31a8ff;
 
-  /* Fuego "smile" accent ramp, centered on #ff6200. Use for deliberate
-     highlights (bg-fuego-500, text-fuego-600, etc.) — NOT as primary. */
-  --fuego-50: #fff4ed;
-  --fuego-100: #ffe4d3;
-  --fuego-200: #ffc4a0;
-  --fuego-300: #ff9d63;
-  --fuego-400: #ff8038;
-  --fuego-500: #ff6200;
-  --fuego-600: #e04e00;
-  --fuego-700: #c44e00;
-  --fuego-800: #9c3d00;
-  --fuego-900: #7a3005;
+  /* Alexa blue gradient ramp */
+  --fuego-50: #e8f4ff;
+  --fuego-100: #c8e6ff;
+  --fuego-200: #90cdff;
+  --fuego-300: #5ab4ff;
+  --fuego-400: #31a8ff;
+  --fuego-500: #0095ff;
+  --fuego-600: #007acc;
+  --fuego-700: #005fa3;
+  --fuego-800: #004480;
+  --fuego-900: #002d5c;
 }
 
 /*
@@ -72,25 +66,25 @@
  * deliberately want the night variant.
  */
 .dark {
-  --background: #121110;
-  --foreground: #faf9f7;
-  --card: #1b1a18;
-  --card-foreground: #faf9f7;
-  --popover: #1b1a18;
-  --popover-foreground: #faf9f7;
-  --primary: #faf9f7; /* light ink in dark mode (matches shadcn default) */
-  --primary-foreground: #1b1a18;
-  --secondary: #2a2823;
-  --secondary-foreground: #faf9f7;
-  --muted: #2a2823;
-  --muted-foreground: #adaaa3;
-  --accent: #322f29;
-  --accent-foreground: #faf9f7;
-  --destructive: #ff5a55;
-  --destructive-foreground: #faf9f7;
-  --border: #322f29;
-  --input: #322f29;
-  --ring: #ff7a26;
+  --background: #0d1117;
+  --foreground: #e6edf3;
+  --card: #161b22;
+  --card-foreground: #e6edf3;
+  --popover: #1c2128;
+  --popover-foreground: #e6edf3;
+  --primary: #31a8ff;
+  --primary-foreground: #ffffff;
+  --secondary: #1c2128;
+  --secondary-foreground: #e6edf3;
+  --muted: #1c2128;
+  --muted-foreground: #8b949e;
+  --accent: #21262d;
+  --accent-foreground: #e6edf3;
+  --destructive: #f85149;
+  --destructive-foreground: #ffffff;
+  --border: #30363d;
+  --input: #21262d;
+  --ring: #31a8ff;
 }
 
 @theme inline {
@@ -165,10 +159,10 @@
 @utility bg-thermal {
   background-image: linear-gradient(
     100deg,
-    #ff9d8a 0%,
-    #ff6200 28%,
-    #6fae9c 60%,
-    #7aa7d8 100%
+    #31a8ff 0%,
+    #0095ff 28%,
+    #58d1ff 60%,
+    #31a8ff 100%
   );
 }
 

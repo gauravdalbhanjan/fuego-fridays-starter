@@ -15,6 +15,10 @@ export interface UserPreferences {
   shoppingDay: number;
   /** Budget limit per auto-order */
   budgetLimit: number;
+  /** Robin voice auto-sleep timeout in seconds (privacy/security) */
+  robinSleepTimeout: number;
+  /** Whether Robin voice listening is enabled at all */
+  robinVoiceEnabled: boolean;
   /** Notification preferences */
   notifications: {
     lowStock: boolean;
@@ -30,6 +34,8 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   preferredServiceId: "instacart",
   shoppingDay: 6, // Saturday
   budgetLimit: 150,
+  robinSleepTimeout: 10, // seconds
+  robinVoiceEnabled: true,
   notifications: {
     lowStock: true,
     autoOrderConfirmation: true,
