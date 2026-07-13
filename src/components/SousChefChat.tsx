@@ -35,35 +35,6 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
   const [detectedMood, setDetectedMood] = useState<UserMood | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  // Robin bird chirp
-  const playRobinChirp = useCallback(() => {
-    try {
-      const ctx = audioCtxRef.current || new AudioContext();
-      audioCtxRef.current = ctx;
-      function chirp(startTime: number) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(2800, startTime);
-        osc.frequency.exponentialRampToValueAtTime(2200, startTime + 0.06);
-        osc.frequency.exponentialRampToValueAtTime(3200, startTime + 0.12);
-        osc.frequency.exponentialRampToValueAtTime(2600, startTime + 0.18);
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.15, startTime + 0.02);
-        gain.gain.setValueAtTime(0.15, startTime + 0.1);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.2);
-        osc.start(startTime);
-        osc.stop(startTime + 0.22);
-      }
-      const now = ctx.currentTime;
-      chirp(now);
-      chirp(now + 0.3);
-    } catch {}
-  }, []);
 
   // Process voice commands
   const processVoiceCommand = useCallback((transcript: string) => {
@@ -114,164 +85,160 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     }
   }, [robinSleepTimeout]);
 
-  /** 
-   * LOCAL ON-DEVICE WAKE-WORD DETECTION + VOICE COMMAND
+  /**
+   * SPACEBAR HOLD TO TALK + 10s SESSION
    * 
-   * Wake words: "Hey G", "G", "Hey Robin", "Robin" (detected locally via interim results)
-   * Flow:
-   *   1. Background wake loop listens using interimResults for instant detection
-   *   2. Wake word detected → immediate visual feedback (logo activates)
-   *   3. Streams audio for command parsing (single-shot)
-   *   4. Command processed → mic OFF, back to wake loop
-   *   
-   * Tap on logo = same as wake word (bypasses detection, goes straight to command)
+   * - Hold spacebar → activates listening (green dot)
+   * - Release spacebar → processes command
+   * - After processing, stays awake for 10 seconds for next command
+   * - If no command in 10s → goes back to sleep
+   * - Tap button also starts a session
+   * - During active session, any speech is processed as a command
    */
-  const activeRecognitionRef = useRef<SpeechRecognition | null>(null);
+  const voiceActiveRef = useRef(voiceActive);
+  useEffect(() => { voiceActiveRef.current = voiceActive; }, [voiceActive]);
+  const processRef = useRef(processVoiceCommand);
+  useEffect(() => { processRef.current = processVoiceCommand; }, [processVoiceCommand]);
+  const sessionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sessionActive, setSessionActive] = useState(false); // 10s window after command
+  const sessionActiveRef = useRef(false);
+  useEffect(() => { sessionActiveRef.current = sessionActive; }, [sessionActive]);
 
-  // Wake word patterns — checked against interim text for lowest latency
-  const WAKE_PATTERNS = ["hey g", "hey robin", "robin", "robyn", "hey rob"];
-  
-  function matchesWakeWord(text: string): boolean {
-    const t = text.toLowerCase().trim();
-    return WAKE_PATTERNS.some(p => t.includes(p)) || t === "g" || t.endsWith(" g");
-  }
-
-  // Take ONE voice command, then turn mic off
-  const listenForOneCommand = useCallback(() => {
+  // Start a listening session (recognizes one command, then stays awake 10s)
+  const startSession = useCallback(() => {
     const SpeechRecognitionCtor = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) {
-      setMiniMessage("Voice not supported. Use Chrome.");
-      setMiniChatOpen(true);
-      setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, 3000);
-      return;
-    }
-    if (voiceActive) return;
+    if (!SpeechRecognitionCtor) return;
+    if (voiceActiveRef.current) return;
 
     setVoiceActive(true);
+    setSessionActive(true);
     setLiveTranscript("");
 
-    const recognition = new SpeechRecognitionCtor();
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-    activeRecognitionRef.current = recognition;
+    // Clear any existing sleep timer
+    if (sessionTimerRef.current) clearTimeout(sessionTimerRef.current);
 
+    const rec = new SpeechRecognitionCtor();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = "en-US";
     let acted = false;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    rec.onresult = (event: SpeechRecognitionEvent) => {
       if (acted) return;
       let interim = "";
-      let finalTranscript = "";
+      let finalText = "";
       for (let i = 0; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalTranscript += t;
+        if (event.results[i].isFinal) finalText += t;
         else interim += t;
       }
-      // Strip wake phrase from display and command
-      const raw = finalTranscript || interim;
-      const cleaned = raw.toLowerCase().replace(/hey\s*g\b/g, "").replace(/hey\s*robin/g, "").replace(/\brobin\b/g, "").replace(/\brobyn\b/g, "").replace(/\bg\b/g, "").trim();
-      setLiveTranscript(cleaned || raw);
+      const display = finalText || interim;
+      const cleaned = display.toLowerCase()
+        .replace(/hey\s*g\b/g, "").replace(/hey\s*robin/g, "")
+        .replace(/\brobin\b/g, "").replace(/\brobyn\b/g, "")
+        .replace(/\bg\b/g, "").trim();
+      setLiveTranscript(cleaned || display);
 
-      // Quick match on interim for instant nav
-      if (!finalTranscript && interim && cleaned.length > 3) {
-        const hasMatch = ["menu","inventory","routine","alexa","order","cart","setting","pantry","cook","recipe","groceries","daily","stock"].some(w => cleaned.includes(w));
-        if (hasMatch) {
+      // Quick match on interim
+      if (!finalText && interim && cleaned.length > 3) {
+        const match = ["menu","inventory","routine","alexa","order","cart","setting","pantry","cook","recipe","groceries","daily","stock"].some(w => cleaned.includes(w));
+        if (match) {
           acted = true;
-          recognition.stop();
-          setVoiceActive(false);
+          rec.stop();
+          processRef.current(cleaned);
           setLiveTranscript("");
-          processVoiceCommand(cleaned);
+          setVoiceActive(false);
+          // Stay awake for 10s, then auto-listen again
+          scheduleNextListen();
           return;
         }
       }
 
-      if (finalTranscript) {
+      if (finalText) {
         acted = true;
+        setLiveTranscript("");
+        if (cleaned.length > 0) processRef.current(cleaned);
+        setVoiceActive(false);
+        scheduleNextListen();
+      }
+    };
+
+    rec.onerror = () => {
+      setVoiceActive(false);
+      setLiveTranscript("");
+      // If session still active, try again
+      if (sessionActiveRef.current) scheduleNextListen();
+    };
+
+    rec.onend = () => {
+      if (!acted) {
         setVoiceActive(false);
         setLiveTranscript("");
-        if (cleaned.length > 0) processVoiceCommand(cleaned);
+        if (sessionActiveRef.current) scheduleNextListen();
       }
     };
 
-    recognition.onerror = () => {
+    try { rec.start(); } catch { setVoiceActive(false); }
+  }, []);
+
+  // Schedule the next listen within the 10s session window
+  const scheduleNextListen = useCallback(() => {
+    // Start listening again after a brief pause
+    setTimeout(() => {
+      if (sessionActiveRef.current) {
+        startSession();
+      }
+    }, 500);
+
+    // Set 10s sleep timer — if no new command, session ends
+    if (sessionTimerRef.current) clearTimeout(sessionTimerRef.current);
+    sessionTimerRef.current = setTimeout(() => {
+      setSessionActive(false);
       setVoiceActive(false);
       setLiveTranscript("");
-      setMiniMessage("Didn't catch that. Tap or say \"Hey Robin\".");
-      setMiniChatOpen(true);
-      setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, 3000);
-    };
+      setMiniMessage("");
+    }, 10000);
+  }, []);
 
-    recognition.onend = () => {
-      setVoiceActive(false);
-      setLiveTranscript("");
-    };
-
-    try { recognition.start(); } catch { setVoiceActive(false); }
-  }, [voiceActive, processVoiceCommand]);
-
-  // ─── LOCAL WAKE-WORD LOOP ───
-  // Uses interimResults for near-instant detection (no waiting for final)
-  const listenRef = useRef(listenForOneCommand);
-  useEffect(() => { listenRef.current = listenForOneCommand; }, [listenForOneCommand]);
-  const voiceActiveRef = useRef(voiceActive);
-  useEffect(() => { voiceActiveRef.current = voiceActive; }, [voiceActive]);
-
+  // Spacebar hold to talk
   useEffect(() => {
-    const SpeechRecognitionCtor = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) return;
+    let spaceHeld = false;
 
-    let stopped = false;
-
-    function wakeLoop() {
-      if (stopped || voiceActiveRef.current) {
-        if (!stopped) setTimeout(wakeLoop, 1000);
-        return;
-      }
-
-      const rec = new SpeechRecognitionCtor!();
-      rec.continuous = false;
-      rec.interimResults = true; // Detect wake word from INTERIM for lowest latency
-      rec.lang = "en-US";
-
-      let wakeDetected = false;
-
-      rec.onresult = (event: SpeechRecognitionEvent) => {
-        if (wakeDetected) return;
-        // Check ALL results (interim + final) for wake word
-        for (let i = 0; i < event.results.length; i++) {
-          const t = event.results[i][0].transcript.toLowerCase().trim();
-          if (matchesWakeWord(t)) {
-            wakeDetected = true;
-            rec.stop(); // Immediately stop wake detector
-            console.log("[Robin] Wake word detected (local):", t);
-            // Immediate response — activate command listener
-            listenRef.current();
-            return;
-          }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.code === "Space" && !spaceHeld && !e.repeat) {
+        // Don't capture if user is typing in an input/textarea
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        e.preventDefault();
+        spaceHeld = true;
+        if (!sessionActiveRef.current) {
+          startSession();
         }
-      };
-
-      rec.onerror = (e: Event) => {
-        const err = (e as unknown as { error?: string }).error;
-        if (err === "no-speech" || err === "aborted") {
-          if (!stopped) setTimeout(wakeLoop, 50);
-        } else {
-          if (!stopped) setTimeout(wakeLoop, 5000);
-        }
-      };
-
-      rec.onend = () => {
-        if (!stopped && !wakeDetected && !voiceActiveRef.current) setTimeout(wakeLoop, 50);
-      };
-
-      try { rec.start(); } catch {
-        if (!stopped) setTimeout(wakeLoop, 3000);
       }
     }
 
-    wakeLoop();
-    return () => { stopped = true; };
+    function onKeyUp(e: KeyboardEvent) {
+      if (e.code === "Space" && spaceHeld) {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        e.preventDefault();
+        spaceHeld = false;
+        // Session continues for 10s after release
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
   }, []);
+
+  // Tap button also starts session
+  const listenForOneCommand = useCallback(() => {
+    startSession();
+  }, [startSession]);
 
   // Save state on changes
   useEffect(() => {
@@ -379,20 +346,81 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     "Change preferences",
   ];
 
-  // Floating logo (closed state) — TAP TO TALK
+  // Floating logo — like Siri: TAP to listen, that's it
   if (!isOpen) {
     return (
       <>
-        <DraggableLogo
-          onClick={listenForOneCommand}
-          onLongPress={() => setIsOpen(true)}
-          lowStockCount={lowStockCount}
-          voiceActive={voiceActive}
-          liveTranscript={liveTranscript}
-          onNotification={playRobinChirp}
-        />
+        {/* The Robin button — fixed position, just tap it */}
+        <div className="fixed top-4 right-4 z-40" style={{ width: "80px", height: "80px" }}>
+          <button
+            onClick={listenForOneCommand}
+            className="relative h-full w-full rounded-full overflow-hidden border-2 border-[#30363d] shadow-xl transition-transform active:scale-90 focus:outline-none"
+            style={{
+              borderColor: voiceActive ? "#3fb950" : "#30363d",
+              boxShadow: voiceActive ? "0 0 20px #3fb950, 0 0 40px #3fb95040" : "0 4px 20px rgba(0,0,0,0.5)",
+            }}
+            aria-label="Tap to talk to Robin"
+          >
+            <img src="/chef-logo.png" alt="Robin" className="h-full w-full object-cover" draggable={false} />
+
+            {/* Green mic indicator */}
+            <span
+              className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-[#0d1117]"
+              style={{ background: voiceActive ? "#3fb950" : sessionActive ? "#f0c000" : "#484f58", boxShadow: voiceActive ? "0 0 6px #3fb950" : sessionActive ? "0 0 6px #f0c000" : "none" }}
+            />
+
+            {/* Listening overlay */}
+            {voiceActive && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#31a8ff]/30 backdrop-blur-sm">
+                <div className="flex items-center gap-0.5">
+                  <span className="h-3 w-0.5 rounded-full bg-white animate-pulse" />
+                  <span className="h-4 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "100ms" }} />
+                  <span className="h-5 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "200ms" }} />
+                  <span className="h-4 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "300ms" }} />
+                  <span className="h-3 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "400ms" }} />
+                </div>
+              </div>
+            )}
+          </button>
+
+          {/* Live transcript below the button */}
+          {voiceActive && liveTranscript && (
+            <div className="absolute top-full mt-2 right-0 w-48 rounded-xl bg-[#161b22] border border-[#30363d] px-3 py-2 shadow-lg">
+              <p className="text-[11px] text-[#e6edf3] leading-tight">"{liveTranscript}"</p>
+            </div>
+          )}
+          {voiceActive && !liveTranscript && (
+            <div className="absolute top-full mt-2 right-0 rounded-xl bg-[#161b22] border border-[#30363d] px-3 py-2 shadow-lg">
+              <p className="text-[11px] text-[#3fb950] font-medium">Listening...</p>
+            </div>
+          )}
+          {!voiceActive && sessionActive && (
+            <div className="absolute top-full mt-2 right-0 rounded-xl bg-[#161b22] border border-[#f0c000]/30 px-3 py-2 shadow-lg">
+              <p className="text-[11px] text-[#f0c000] font-medium">Ready for next command...</p>
+              <p className="text-[9px] text-[#8b949e]">Spacebar or speak</p>
+            </div>
+          )}
+
+          {/* Chat button */}
+          {!voiceActive && (
+            <button
+              onClick={() => setIsOpen(true)}
+              className="absolute -bottom-1 -left-1 rounded-full bg-[#161b22] border border-[#30363d] px-2 py-0.5 text-[8px] font-bold text-[#31a8ff] hover:bg-[#31a8ff]/10"
+            >
+              Chat
+            </button>
+          )}
+        </div>
+
+        {/* Mini response bubble */}
         {miniChatOpen && (
-          <MiniChatBubble message={miniMessage} onClose={() => { setMiniChatOpen(false); setMiniMessage(""); }} />
+          <div className="fixed top-24 right-4 z-40 w-64 rounded-2xl bg-[#161b22] border border-[#30363d] px-4 py-3 shadow-2xl">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold text-[#31a8ff]">Robin</span>
+              <button onClick={() => { setMiniChatOpen(false); setMiniMessage(""); }} className="text-[#8b949e] text-xs hover:text-white">✕</button>
+            </div>
+            <p className="text-[12px] text-[#e6edf3] leading-relaxed">{miniMessage}</p>
+          </div>
         )}
       </>
     );
@@ -599,262 +627,5 @@ function getMoodReaction(mood: UserMood): string {
   return reactions[mood.expression][Math.floor(Math.random() * reactions[mood.expression].length)];
 }
 
-/* ─── Mini Chat Bubble (iMessage style, appears next to logo) ─── */
-function MiniChatBubble({ message, onClose }: { message: string; onClose: () => void }) {
-  return (
-    <div className="fixed top-56 right-[220px] z-50 animate-in fade-in slide-in-from-right-4 duration-300"
-      style={{ maxWidth: "280px" }}>
-      <div className="relative rounded-2xl bg-[#1c1c1e] border border-[#3a3a3c] px-4 py-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-1.5">
-          <p className="text-[11px] font-semibold text-[#e6edf3]">Robin</p>
-          <span className="text-[9px] text-[#8b949e]">now</span>
-          <button onClick={onClose} className="ml-auto text-[#8b949e] hover:text-white text-xs">✕</button>
-        </div>
-        {/* Message */}
-        <p className="text-[13px] text-[#e6edf3] leading-relaxed">{message}</p>
-        <p className="mt-1.5 text-[8px] text-[#8b949e] italic">Say "ok" or "close" to dismiss</p>
-
-        {/* Arrow pointing right toward the logo */}
-        <div className="absolute top-6 -right-2 h-3 w-3 rotate-45 bg-[#1c1c1e] border-r border-t border-[#3a3a3c]" />
-      </div>
-    </div>
-  );
-}
-
 /* ─── Draggable Logo with Notification Glow ─── */
-
-type NotificationType = "grocery" | "urgent" | "reminder" | "delivery" | "idle";
-
-interface Notification {
-  type: NotificationType;
-  message: string;
-}
-
-// Simulated notifications cycling
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { type: "grocery", message: "Milk & Eggs running low" },
-  { type: "urgent", message: "Security camera: motion detected" },
-  { type: "reminder", message: "Meal prep at 3 PM" },
-  { type: "delivery", message: "Amazon package arriving today" },
-  { type: "grocery", message: "Bananas out of stock" },
-  { type: "urgent", message: "Missed call from Mom" },
-  { type: "delivery", message: "Fresh order out for delivery" },
-  { type: "reminder", message: "Take vitamins" },
-];
-
-const GLOW_COLORS: Record<NotificationType, { border: string; shadow: string; bg: string; label: string }> = {
-  grocery: { border: "#3fb950", shadow: "0 0 20px #3fb95060, 0 0 40px #3fb95030", bg: "rgba(63,185,80,0.15)", label: "🥬 Grocery" },
-  urgent: { border: "#f85149", shadow: "0 0 20px #f8514960, 0 0 40px #f8514930", bg: "rgba(248,81,73,0.15)", label: "🚨 Urgent" },
-  reminder: { border: "#f0c000", shadow: "0 0 20px #f0c00060, 0 0 40px #f0c00030", bg: "rgba(240,192,0,0.15)", label: "📋 Reminder" },
-  delivery: { border: "#f0883e", shadow: "0 0 20px #f0883e60, 0 0 40px #f0883e30", bg: "rgba(240,136,62,0.15)", label: "📦 Delivery" },
-  idle: { border: "#31a8ff", shadow: "0 0 12px #31a8ff30", bg: "rgba(49,168,255,0.1)", label: "" },
-};
-
-function DraggableLogo({ onClick, onLongPress, lowStockCount, voiceActive, liveTranscript, onNotification }: { onClick: () => void; onLongPress: () => void; lowStockCount: number; voiceActive: boolean; liveTranscript: string; onNotification: () => void }) {
-  const [position, setPosition] = useState({ x: window.innerWidth - 220, y: 16 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [hasMoved, setHasMoved] = useState(false);
-  const [currentNotification, setCurrentNotification] = useState<Notification | null>(null);
-  const [pulsePhase, setPulsePhase] = useState(0);
-  const [isActivePhase, setIsActivePhase] = useState(false); // true = heartbeat, false = resting
-  const logoRef = useRef<HTMLDivElement>(null);
-
-  // Notification pattern: heartbeat 5s → idle 30s → heartbeat 5s with next color
-  useEffect(() => {
-    let notifIndex = 0;
-    let timeout: ReturnType<typeof setTimeout>;
-
-    function showNotification() {
-      // Pick next notification
-      setCurrentNotification(MOCK_NOTIFICATIONS[notifIndex % MOCK_NOTIFICATIONS.length]);
-      notifIndex++;
-      setIsActivePhase(true);
-      onNotification(); // Robin chirp on new notification
-
-      // Active heartbeat for 5 seconds
-      timeout = setTimeout(() => {
-        setIsActivePhase(false);
-        setCurrentNotification(null);
-
-        // Rest for 30 seconds, then show next
-        timeout = setTimeout(showNotification, 30000);
-      }, 5000);
-    }
-
-    // Start first notification after 2s
-    timeout = setTimeout(showNotification, 2000);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  // If low stock, override with grocery notification during active phase
-  useEffect(() => {
-    if (lowStockCount > 0 && !currentNotification && !isActivePhase) {
-      setCurrentNotification({ type: "grocery", message: `${lowStockCount} items running low` });
-      setIsActivePhase(true);
-      setTimeout(() => {
-        setIsActivePhase(false);
-        setCurrentNotification(null);
-      }, 5000);
-    }
-  }, [lowStockCount]);
-
-  // Heartbeat pulse — only animates during active phase
-  useEffect(() => {
-    if (!isActivePhase) {
-      setPulsePhase(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setPulsePhase((p) => (p + 1) % 100);
-    }, 40); // slightly slower for calming effect
-    return () => clearInterval(interval);
-  }, [isActivePhase]);
-
-  const notifType: NotificationType = currentNotification?.type || "idle";
-  const glowStyle = GLOW_COLORS[notifType];
-
-  // Heartbeat: soft double-pulse (lub-dub) pattern
-  const heartbeatCycle = (pulsePhase / 100) * Math.PI * 2;
-  const heartbeat = isActivePhase
-    ? 1 + 0.025 * (Math.sin(heartbeatCycle) + 0.5 * Math.sin(heartbeatCycle * 2)) // double-pulse
-    : 1;
-  // Glow intensity: strong during active, subtle during idle
-  const glowIntensity = isActivePhase
-    ? 0.6 + 0.4 * Math.abs(Math.sin(heartbeatCycle))
-    : 0.2;
-
-  // Long press detection
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    setIsDragging(true);
-    setHasMoved(false);
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    // Start long press timer
-    longPressTimerRef.current = setTimeout(() => {
-      longPressTimerRef.current = null;
-      onLongPress();
-    }, 600);
-  }, [position, onLongPress]);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const newX = Math.max(0, Math.min(window.innerWidth - 200, e.clientX - dragStart.x));
-    const newY = Math.max(0, Math.min(window.innerHeight - 200, e.clientY - dragStart.y));
-    setPosition({ x: newX, y: newY });
-    setHasMoved(true);
-    // Cancel long press if dragging
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-  }, [isDragging, dragStart]);
-
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    setIsDragging(false);
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    // Cancel long press
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-    // Single tap
-    if (!hasMoved) {
-      onClick();
-    }
-  }, [hasMoved, onClick]);
-
-  return (
-    <div
-      ref={logoRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      className="fixed z-40 cursor-grab active:cursor-grabbing select-none touch-none"
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        width: "200px",
-        height: "200px",
-        transform: `scale(${heartbeat})`,
-        transition: isDragging ? "none" : "transform 0.3s ease",
-      }}
-      role="button"
-      aria-label="Open Sous Chef AI — drag to move"
-    >
-      <div
-        className="relative h-full w-full rounded-3xl overflow-hidden"
-        style={{
-          border: `2.5px solid ${glowStyle.border}`,
-          boxShadow: glowStyle.shadow.replace(/60/g, `${Math.round(glowIntensity * 99)}`),
-          transition: "border-color 0.8s ease, box-shadow 0.8s ease",
-        }}
-      >
-        <img
-          src="/chef-logo.png"
-          alt="Sous Chef AI"
-          className="h-full w-full object-cover pointer-events-none"
-          draggable={false}
-        />
-
-        {/* Inner glow overlay */}
-        <div
-          className="absolute inset-0 rounded-3xl pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at center, ${glowStyle.bg} 0%, transparent 70%)`,
-            opacity: glowIntensity,
-            transition: "background 0.8s ease, opacity 0.3s ease",
-          }}
-        />
-
-        {/* Notification label */}
-        {currentNotification && (
-          <div
-            className="absolute bottom-2 left-2 right-2 rounded-xl px-2.5 py-1.5 backdrop-blur-md"
-            style={{ background: glowStyle.bg, borderTop: `1px solid ${glowStyle.border}40` }}
-          >
-            <p className="text-[9px] font-bold text-white/90 truncate">
-              {glowStyle.label}
-            </p>
-            <p className="text-[8px] text-white/60 truncate">
-              {currentNotification.message}
-            </p>
-          </div>
-        )}
-
-        {/* Idle state: tap to talk + chat button */}
-        {!currentNotification && !voiceActive && (
-          <>
-            <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-[#0d1117]/80 px-2 py-1 backdrop-blur-sm">
-              <span className="h-2 w-2 rounded-full bg-[#31a8ff] animate-pulse shadow-[0_0_4px_#31a8ff]" />
-              <span className="text-[9px] font-medium text-[#e6edf3]">Tap to talk</span>
-            </span>
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); onLongPress(); }}
-              className="absolute top-2 right-2 rounded-full bg-[#0d1117]/80 px-2.5 py-1 backdrop-blur-sm text-[9px] font-bold text-[#31a8ff] hover:bg-[#31a8ff]/20 transition-colors border border-[#31a8ff]/30"
-            >
-              Chat ↗
-            </button>
-          </>
-        )}
-
-        {/* Voice active — Siri-style listening indicator */}
-        {voiceActive && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-[#31a8ff]/20 backdrop-blur-sm border-2 border-[#31a8ff] shadow-[0_0_30px_#31a8ff60]">
-            <div className="flex items-center gap-1">
-              <span className="h-4 w-1 rounded-full bg-[#31a8ff] animate-pulse" style={{ animationDelay: "0ms" }} />
-              <span className="h-6 w-1 rounded-full bg-[#31a8ff] animate-pulse" style={{ animationDelay: "100ms" }} />
-              <span className="h-8 w-1 rounded-full bg-[#31a8ff] animate-pulse" style={{ animationDelay: "200ms" }} />
-              <span className="h-6 w-1 rounded-full bg-[#31a8ff] animate-pulse" style={{ animationDelay: "300ms" }} />
-              <span className="h-4 w-1 rounded-full bg-[#31a8ff] animate-pulse" style={{ animationDelay: "400ms" }} />
-            </div>
-            {liveTranscript ? (
-              <p className="mt-3 px-3 text-center text-[11px] font-medium text-white leading-tight max-h-16 overflow-hidden">"{liveTranscript}"</p>
-            ) : (
-              <span className="mt-3 text-[11px] font-bold text-white">Actively listening...</span>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// REMOVED — replaced by simple fixed button in SousChefChat render
