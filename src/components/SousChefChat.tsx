@@ -17,6 +17,11 @@ import {
   type UserMood,
   type SousChefState,
 } from "@/services/sousChef";
+import {
+  createPorcupineEngine,
+  createSpeechFallbackEngine,
+  type WakeWordEngine,
+} from "@/services/wakeWord";
 
 interface SousChefChatProps {
   lowStockCount: number;
@@ -113,105 +118,127 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     }
   }, [playRobinChirp, robinSleepTimeout]);
 
-  /** Start listening session — stays active for multiple commands until timeout */
+  /** 
+   * Voice logic — exactly as described:
+   * 1. Mic OFF by default
+   * 2. "Hey Robin" or TAP = turns mic ON for ONE command
+   * 3. Shows live transcript, processes command, then mic OFF
+   * 4. Next command requires another tap or "Hey Robin"
+   */
   const activeRecognitionRef = useRef<SpeechRecognition | null>(null);
-  const sessionActiveRef = useRef(false);
 
-  const stopListening = useCallback(() => {
-    sessionActiveRef.current = false;
-    setVoiceActive(false);
-    setLiveTranscript("");
-    try { activeRecognitionRef.current?.stop(); } catch {}
-    activeRecognitionRef.current = null;
-  }, []);
-
-  const startListening = useCallback(() => {
+  // Take ONE voice command, then turn mic off
+  const listenForOneCommand = useCallback(() => {
     const SpeechRecognitionCtor = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) {
-      setMiniMessage("Voice not supported in this browser. Use Chrome.");
+      setMiniMessage("Voice not supported. Use Chrome.");
       setMiniChatOpen(true);
       setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, 3000);
       return;
     }
+    if (voiceActive) return; // Already listening
 
-    // If already in a session, don't restart
-    if (sessionActiveRef.current) return;
-
-    sessionActiveRef.current = true;
     setVoiceActive(true);
     setLiveTranscript("");
 
-    function listen() {
-      if (!sessionActiveRef.current) return;
+    const recognition = new SpeechRecognitionCtor();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    activeRecognitionRef.current = recognition;
 
-      const recognition = new SpeechRecognitionCtor!();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = "en-US";
-      activeRecognitionRef.current = recognition;
+    let acted = false;
 
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interim = "";
-        let finalTranscript = "";
-        for (let i = 0; i < event.results.length; i++) {
-          const t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += t;
-          } else {
-            interim += t;
-          }
-        }
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      if (acted) return;
+      let interim = "";
+      let finalTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += t;
+        else interim += t;
+      }
+      setLiveTranscript(finalTranscript || interim);
 
-        setLiveTranscript(finalTranscript || interim);
-
-        if (finalTranscript) {
-          console.log("[Robin] Heard:", finalTranscript);
+      // Quick match on interim for instant response
+      const text = (finalTranscript || interim).toLowerCase().replace(/hey\s*robin\s*/, "").replace(/robin\s*/, "").trim();
+      if (!finalTranscript && interim && text.length > 3) {
+        const hasMatch = ["menu","inventory","routine","alexa","order","cart","setting","pantry","cook","recipe","groceries","daily"].some(w => text.includes(w));
+        if (hasMatch) {
+          acted = true;
+          recognition.stop();
+          setVoiceActive(false);
           setLiveTranscript("");
-          const cleaned = finalTranscript.toLowerCase().replace(/hey\s*robin\s*/, "").replace(/robin\s*/, "").trim();
-
-          // Check for dismiss commands
-          if (cleaned.includes("goodbye") || cleaned.includes("that's all") || cleaned.includes("stop") || cleaned.includes("go away") || cleaned.includes("sleep")) {
-            setMiniMessage("Okay, going quiet. Tap or say \"Hey Robin\" to wake me.");
-            setMiniChatOpen(true);
-            setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, 3000);
-            stopListening();
-            return;
-          }
-
-          if (cleaned.length > 0) {
-            processVoiceCommand(cleaned);
-          }
-
-          // Keep listening for the next command
-          setLiveTranscript("");
-          setTimeout(listen, 300);
-        }
-      };
-
-      recognition.onerror = (e: Event) => {
-        const error = (e as unknown as { error?: string }).error;
-        if (error === "no-speech" || error === "aborted") {
-          // Silence — restart listening
-          if (sessionActiveRef.current) setTimeout(listen, 100);
+          processVoiceCommand(text);
           return;
         }
-        // Real error
-        stopListening();
-        setMiniMessage("Didn't catch that. Tap me again.");
-        setMiniChatOpen(true);
-        setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, 3000);
-      };
+      }
 
-      recognition.onend = () => {
-        // If session still active and no result triggered restart, restart here
-        if (sessionActiveRef.current) setTimeout(listen, 100);
-      };
+      if (finalTranscript) {
+        acted = true;
+        setVoiceActive(false);
+        setLiveTranscript("");
+        if (text.length > 0) processVoiceCommand(text);
+      }
+    };
 
-      try { recognition.start(); } catch { stopListening(); }
+    recognition.onerror = () => {
+      setVoiceActive(false);
+      setLiveTranscript("");
+      setMiniMessage("Didn't catch that. Tap or say \"Hey Robin\".");
+      setMiniChatOpen(true);
+      setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, 3000);
+    };
+
+    recognition.onend = () => {
+      setVoiceActive(false);
+      setLiveTranscript("");
+    };
+
+    try { recognition.start(); } catch { setVoiceActive(false); }
+  }, [voiceActive, processVoiceCommand]);
+
+  // Wake word detection — Picovoice Porcupine (on-device) with Web Speech fallback
+  const listenRef = useRef(listenForOneCommand);
+  useEffect(() => { listenRef.current = listenForOneCommand; }, [listenForOneCommand]);
+  const voiceActiveRef = useRef(voiceActive);
+  useEffect(() => { voiceActiveRef.current = voiceActive; }, [voiceActive]);
+
+  useEffect(() => {
+    let engine: WakeWordEngine | null = null;
+
+    async function init() {
+      // Try Picovoice first (on-device, low latency)
+      const porcupine = await createPorcupineEngine(() => {
+        if (!voiceActiveRef.current) {
+          console.log("[WakeWord] Triggered → activating command listener");
+          listenRef.current();
+        }
+      });
+
+      if (porcupine) {
+        engine = porcupine;
+        await porcupine.start();
+        console.log("[WakeWord] Using Picovoice Porcupine (on-device)");
+      } else {
+        // Fallback to Web Speech API wake detection
+        engine = createSpeechFallbackEngine(() => {
+          if (!voiceActiveRef.current) {
+            console.log("[WakeWord] Fallback triggered → activating command listener");
+            listenRef.current();
+          }
+        });
+        await engine.start();
+        console.log("[WakeWord] Using Web Speech fallback");
+      }
     }
 
-    listen();
-  }, [processVoiceCommand, stopListening]);
+    init();
+
+    return () => {
+      if (engine) engine.stop();
+    };
+  }, []);
 
   // Save state on changes
   useEffect(() => {
@@ -324,7 +351,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     return (
       <>
         <DraggableLogo
-          onClick={voiceActive ? stopListening : startListening}
+          onClick={listenForOneCommand}
           onLongPress={() => setIsOpen(true)}
           lowStockCount={lowStockCount}
           voiceActive={voiceActive}
@@ -760,12 +787,21 @@ function DraggableLogo({ onClick, onLongPress, lowStockCount, voiceActive, liveT
           </div>
         )}
 
-        {/* Idle state: tap to talk */}
+        {/* Idle state: tap to talk + chat button */}
         {!currentNotification && !voiceActive && (
-          <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-[#0d1117]/80 px-2 py-1 backdrop-blur-sm">
-            <span className="h-2 w-2 rounded-full bg-[#31a8ff] animate-pulse shadow-[0_0_4px_#31a8ff]" />
-            <span className="text-[9px] font-medium text-[#e6edf3]">Tap to talk</span>
-          </span>
+          <>
+            <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-[#0d1117]/80 px-2 py-1 backdrop-blur-sm">
+              <span className="h-2 w-2 rounded-full bg-[#31a8ff] animate-pulse shadow-[0_0_4px_#31a8ff]" />
+              <span className="text-[9px] font-medium text-[#e6edf3]">Tap to talk</span>
+            </span>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onLongPress(); }}
+              className="absolute top-2 right-2 rounded-full bg-[#0d1117]/80 px-2.5 py-1 backdrop-blur-sm text-[9px] font-bold text-[#31a8ff] hover:bg-[#31a8ff]/20 transition-colors border border-[#31a8ff]/30"
+            >
+              Chat ↗
+            </button>
+          </>
         )}
 
         {/* Voice active — Siri-style listening indicator */}
