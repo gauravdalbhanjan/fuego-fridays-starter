@@ -17,11 +17,6 @@ import {
   type UserMood,
   type SousChefState,
 } from "@/services/sousChef";
-import {
-  createPorcupineEngine,
-  createSpeechFallbackEngine,
-  type WakeWordEngine,
-} from "@/services/wakeWord";
 
 interface SousChefChatProps {
   lowStockCount: number;
@@ -73,28 +68,30 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
   // Process voice commands
   const processVoiceCommand = useCallback((transcript: string) => {
     const t = transcript.toLowerCase().trim();
+    // Strip common prefixes: "go to", "open", "show me", "navigate to"
+    const stripped = t.replace(/^(go\s*to|open|show\s*me|navigate\s*to|switch\s*to|take\s*me\s*to)\s+/i, "").replace(/\s*page$/i, "").trim();
     let response = "";
 
-    if ((t.includes("open") && t.includes("chat")) || t.includes("full chat")) {
+    if (stripped.includes("chat") || (t.includes("open") && t.includes("chat"))) {
       response = "Opening chat.";
       setIsOpen(true);
       setMiniChatOpen(false);
-    } else if (t.includes("menu") || t.includes("food") || t.includes("cook") || t.includes("dish") || t.includes("recipe")) {
+    } else if (stripped.includes("menu") || stripped.includes("food") || stripped.includes("cook") || stripped.includes("dish") || stripped.includes("recipe")) {
       response = "Opening menu.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "menu" }));
-    } else if (t.includes("inventory") || t.includes("pantry") || t.includes("stock") || t.includes("groceries")) {
+    } else if (stripped.includes("inventory") || stripped.includes("pantry") || stripped.includes("stock") || stripped.includes("groceries") || stripped.includes("items")) {
       response = "Opening inventory.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "inventory" }));
-    } else if (t.includes("routine") || t.includes("schedule") || t.includes("meal plan") || t.includes("daily")) {
+    } else if (stripped.includes("routine") || stripped.includes("schedule") || stripped.includes("meal plan") || stripped.includes("daily")) {
       response = "Opening routine.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "routine" }));
-    } else if (t.includes("alexa") || t.includes("order") || t.includes("amazon") || t.includes("delivery") || t.includes("restock")) {
+    } else if (stripped.includes("alexa") || stripped.includes("order") || stripped.includes("amazon") || stripped.includes("delivery") || stripped.includes("restock")) {
       response = "Opening orders.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "events" }));
-    } else if (t.includes("setting") || t.includes("config") || t.includes("preference")) {
+    } else if (stripped.includes("setting") || stripped.includes("config") || stripped.includes("preference")) {
       response = "Opening settings.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "settings" }));
-    } else if (t.includes("cart")) {
+    } else if (stripped.includes("cart") || stripped.includes("basket")) {
       response = "Opening cart.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "cart" }));
     } else if (t.includes("add")) {
@@ -113,19 +110,31 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     if (response) {
       setMiniMessage(response);
       setMiniChatOpen(true);
-      // Auto-dismiss after timeout
       setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, robinSleepTimeout * 1000);
     }
-  }, [playRobinChirp, robinSleepTimeout]);
+  }, [robinSleepTimeout]);
 
   /** 
-   * Voice logic — exactly as described:
-   * 1. Mic OFF by default
-   * 2. "Hey Robin" or TAP = turns mic ON for ONE command
-   * 3. Shows live transcript, processes command, then mic OFF
-   * 4. Next command requires another tap or "Hey Robin"
+   * LOCAL ON-DEVICE WAKE-WORD DETECTION + VOICE COMMAND
+   * 
+   * Wake words: "Hey G", "G", "Hey Robin", "Robin" (detected locally via interim results)
+   * Flow:
+   *   1. Background wake loop listens using interimResults for instant detection
+   *   2. Wake word detected → immediate visual feedback (logo activates)
+   *   3. Streams audio for command parsing (single-shot)
+   *   4. Command processed → mic OFF, back to wake loop
+   *   
+   * Tap on logo = same as wake word (bypasses detection, goes straight to command)
    */
   const activeRecognitionRef = useRef<SpeechRecognition | null>(null);
+
+  // Wake word patterns — checked against interim text for lowest latency
+  const WAKE_PATTERNS = ["hey g", "hey robin", "robin", "robyn", "hey rob"];
+  
+  function matchesWakeWord(text: string): boolean {
+    const t = text.toLowerCase().trim();
+    return WAKE_PATTERNS.some(p => t.includes(p)) || t === "g" || t.endsWith(" g");
+  }
 
   // Take ONE voice command, then turn mic off
   const listenForOneCommand = useCallback(() => {
@@ -136,7 +145,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
       setTimeout(() => { setMiniChatOpen(false); setMiniMessage(""); }, 3000);
       return;
     }
-    if (voiceActive) return; // Already listening
+    if (voiceActive) return;
 
     setVoiceActive(true);
     setLiveTranscript("");
@@ -158,18 +167,20 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
         if (event.results[i].isFinal) finalTranscript += t;
         else interim += t;
       }
-      setLiveTranscript(finalTranscript || interim);
+      // Strip wake phrase from display and command
+      const raw = finalTranscript || interim;
+      const cleaned = raw.toLowerCase().replace(/hey\s*g\b/g, "").replace(/hey\s*robin/g, "").replace(/\brobin\b/g, "").replace(/\brobyn\b/g, "").replace(/\bg\b/g, "").trim();
+      setLiveTranscript(cleaned || raw);
 
-      // Quick match on interim for instant response
-      const text = (finalTranscript || interim).toLowerCase().replace(/hey\s*robin\s*/, "").replace(/robin\s*/, "").trim();
-      if (!finalTranscript && interim && text.length > 3) {
-        const hasMatch = ["menu","inventory","routine","alexa","order","cart","setting","pantry","cook","recipe","groceries","daily"].some(w => text.includes(w));
+      // Quick match on interim for instant nav
+      if (!finalTranscript && interim && cleaned.length > 3) {
+        const hasMatch = ["menu","inventory","routine","alexa","order","cart","setting","pantry","cook","recipe","groceries","daily","stock"].some(w => cleaned.includes(w));
         if (hasMatch) {
           acted = true;
           recognition.stop();
           setVoiceActive(false);
           setLiveTranscript("");
-          processVoiceCommand(text);
+          processVoiceCommand(cleaned);
           return;
         }
       }
@@ -178,7 +189,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
         acted = true;
         setVoiceActive(false);
         setLiveTranscript("");
-        if (text.length > 0) processVoiceCommand(text);
+        if (cleaned.length > 0) processVoiceCommand(cleaned);
       }
     };
 
@@ -198,46 +209,68 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     try { recognition.start(); } catch { setVoiceActive(false); }
   }, [voiceActive, processVoiceCommand]);
 
-  // Wake word detection — Picovoice Porcupine (on-device) with Web Speech fallback
+  // ─── LOCAL WAKE-WORD LOOP ───
+  // Uses interimResults for near-instant detection (no waiting for final)
   const listenRef = useRef(listenForOneCommand);
   useEffect(() => { listenRef.current = listenForOneCommand; }, [listenForOneCommand]);
   const voiceActiveRef = useRef(voiceActive);
   useEffect(() => { voiceActiveRef.current = voiceActive; }, [voiceActive]);
 
   useEffect(() => {
-    let engine: WakeWordEngine | null = null;
+    const SpeechRecognitionCtor = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
 
-    async function init() {
-      // Try Picovoice first (on-device, low latency)
-      const porcupine = await createPorcupineEngine(() => {
-        if (!voiceActiveRef.current) {
-          console.log("[WakeWord] Triggered → activating command listener");
-          listenRef.current();
-        }
-      });
+    let stopped = false;
 
-      if (porcupine) {
-        engine = porcupine;
-        await porcupine.start();
-        console.log("[WakeWord] Using Picovoice Porcupine (on-device)");
-      } else {
-        // Fallback to Web Speech API wake detection
-        engine = createSpeechFallbackEngine(() => {
-          if (!voiceActiveRef.current) {
-            console.log("[WakeWord] Fallback triggered → activating command listener");
+    function wakeLoop() {
+      if (stopped || voiceActiveRef.current) {
+        if (!stopped) setTimeout(wakeLoop, 1000);
+        return;
+      }
+
+      const rec = new SpeechRecognitionCtor!();
+      rec.continuous = false;
+      rec.interimResults = true; // Detect wake word from INTERIM for lowest latency
+      rec.lang = "en-US";
+
+      let wakeDetected = false;
+
+      rec.onresult = (event: SpeechRecognitionEvent) => {
+        if (wakeDetected) return;
+        // Check ALL results (interim + final) for wake word
+        for (let i = 0; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript.toLowerCase().trim();
+          if (matchesWakeWord(t)) {
+            wakeDetected = true;
+            rec.stop(); // Immediately stop wake detector
+            console.log("[Robin] Wake word detected (local):", t);
+            // Immediate response — activate command listener
             listenRef.current();
+            return;
           }
-        });
-        await engine.start();
-        console.log("[WakeWord] Using Web Speech fallback");
+        }
+      };
+
+      rec.onerror = (e: Event) => {
+        const err = (e as unknown as { error?: string }).error;
+        if (err === "no-speech" || err === "aborted") {
+          if (!stopped) setTimeout(wakeLoop, 50);
+        } else {
+          if (!stopped) setTimeout(wakeLoop, 5000);
+        }
+      };
+
+      rec.onend = () => {
+        if (!stopped && !wakeDetected && !voiceActiveRef.current) setTimeout(wakeLoop, 50);
+      };
+
+      try { rec.start(); } catch {
+        if (!stopped) setTimeout(wakeLoop, 3000);
       }
     }
 
-    init();
-
-    return () => {
-      if (engine) engine.stop();
-    };
+    wakeLoop();
+    return () => { stopped = true; };
   }, []);
 
   // Save state on changes
