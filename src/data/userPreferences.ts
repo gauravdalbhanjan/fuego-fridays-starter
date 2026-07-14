@@ -19,6 +19,10 @@ export interface UserPreferences {
   robinSleepTimeout: number;
   /** Whether Robin voice listening is enabled at all */
   robinVoiceEnabled: boolean;
+  /** Key to hold for voice activation (default: Space) */
+  voiceActivationKey: string;
+  /** Theme mode: system, light, dark */
+  themeMode: "system" | "light" | "dark";
   /** Notification preferences */
   notifications: {
     lowStock: boolean;
@@ -36,6 +40,8 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   budgetLimit: 150,
   robinSleepTimeout: 10, // seconds
   robinVoiceEnabled: true,
+  voiceActivationKey: "Space",
+  themeMode: "dark" as const,
   notifications: {
     lowStock: true,
     autoOrderConfirmation: true,

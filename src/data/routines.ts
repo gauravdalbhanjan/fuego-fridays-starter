@@ -5,12 +5,13 @@
 export interface MealRoutine {
   id: string;
   mealType: "Breakfast" | "Lunch" | "Dinner" | "Snack";
-  startTime: string; // "7:00 AM"
-  endTime: string; // "8:00 AM"
-  activeDays: boolean[]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
-  gradient: string; // CSS gradient for the card background
+  startTime: string;
+  endTime: string;
+  activeDays: boolean[];
+  gradient: string;
   emoji: string;
-  preferredDishes: string[]; // dish IDs
+  image?: string; // background image path
+  preferredDishes: string[];
   calorieTarget?: number;
   notes?: string;
 }
@@ -24,6 +25,7 @@ export const DEFAULT_ROUTINES: MealRoutine[] = [
     activeDays: [true, true, true, true, true, true, true],
     gradient: "linear-gradient(135deg, #f97316 0%, #eab308 50%, #fbbf24 100%)",
     emoji: "☕",
+    image: "/routine/GoodMorningMessagesEveryDay.jpg",
     preferredDishes: ["d9", "d10", "d12", "d14"],
     calorieTarget: 400,
     notes: "Light & quick on weekdays, bigger on weekends",
@@ -36,6 +38,7 @@ export const DEFAULT_ROUTINES: MealRoutine[] = [
     activeDays: [false, true, true, true, true, true, false],
     gradient: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
     emoji: "🥗",
+    image: "/routine/image 72a5.png",
     preferredDishes: ["d1", "d5", "d6"],
     calorieTarget: 550,
     notes: "Usually meal prep or leftovers",
@@ -48,6 +51,7 @@ export const DEFAULT_ROUTINES: MealRoutine[] = [
     activeDays: [true, true, true, true, true, true, true],
     gradient: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #4c1d95 100%)",
     emoji: "🍽",
+    image: "/routine/image 7sd26.png",
     preferredDishes: ["d4", "d8", "d11", "d13", "d15"],
     calorieTarget: 700,
     notes: "Family dinner, cook fresh",
@@ -60,6 +64,7 @@ export const DEFAULT_ROUTINES: MealRoutine[] = [
     activeDays: [false, true, true, true, true, true, false],
     gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 50%, #e11d48 100%)",
     emoji: "🍎",
+    image: "/routine/680f46b91d501fd371b21404_Screenshot 2025-04-28 at 11.13.24 AM.png",
     preferredDishes: ["d7", "d9"],
     calorieTarget: 200,
     notes: "Quick energy boost",

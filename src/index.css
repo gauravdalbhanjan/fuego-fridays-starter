@@ -87,6 +87,29 @@
   --ring: #31a8ff;
 }
 
+/* Alexa Echo-style light mode */
+.light {
+  --background: #f0f4f8;
+  --foreground: #1a2332;
+  --card: #ffffff;
+  --card-foreground: #1a2332;
+  --popover: #ffffff;
+  --popover-foreground: #1a2332;
+  --primary: #0095ff;
+  --primary-foreground: #ffffff;
+  --secondary: #e8eef4;
+  --secondary-foreground: #1a2332;
+  --muted: #e8eef4;
+  --muted-foreground: #5a6a7a;
+  --accent: #dce5ee;
+  --accent-foreground: #1a2332;
+  --destructive: #e53e3e;
+  --destructive-foreground: #ffffff;
+  --border: #d0dae4;
+  --input: #dce5ee;
+  --ring: #0095ff;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

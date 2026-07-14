@@ -20,11 +20,12 @@ import {
 
 interface SousChefChatProps {
   lowStockCount: number;
-  robinSleepTimeout?: number; // seconds, from settings
+  robinSleepTimeout?: number;
   robinVoiceEnabled?: boolean;
+  voiceKey?: string;
 }
 
-export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChefChatProps) {
+export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey = "Space" }: SousChefChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [miniChatOpen, setMiniChatOpen] = useState(false);
   const [miniMessage, setMiniMessage] = useState("");
@@ -65,6 +66,12 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     } else if (stripped.includes("cart") || stripped.includes("basket")) {
       response = "Opening cart.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "cart" }));
+    } else if (t.includes("light mode") || t.includes("light theme") || t.includes("turn on lights")) {
+      response = "Switching to light mode.";
+      window.dispatchEvent(new CustomEvent("robin-theme", { detail: "light" }));
+    } else if (t.includes("dark mode") || t.includes("dark theme") || t.includes("turn off lights")) {
+      response = "Switching to dark mode.";
+      window.dispatchEvent(new CustomEvent("robin-theme", { detail: "dark" }));
     } else if (t.includes("add")) {
       const itemMatch = t.match(/add\s+(.+?)(?:\s+to\s+(?:cart|list|bag))?$/);
       const itemName = itemMatch ? itemMatch[1].replace(/to\s*(cart|list|bag)/, "").trim() : "";
@@ -202,15 +209,14 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
 
   // Spacebar hold to talk
   useEffect(() => {
-    let spaceHeld = false;
+    let keyHeld = false;
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.code === "Space" && !spaceHeld && !e.repeat) {
-        // Don't capture if user is typing in an input/textarea
+      if (e.code === voiceKey && !keyHeld && !e.repeat) {
         const tag = (e.target as HTMLElement).tagName;
         if (tag === "INPUT" || tag === "TEXTAREA") return;
         e.preventDefault();
-        spaceHeld = true;
+        keyHeld = true;
         if (!sessionActiveRef.current) {
           startSession();
         }
@@ -218,12 +224,11 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
     }
 
     function onKeyUp(e: KeyboardEvent) {
-      if (e.code === "Space" && spaceHeld) {
+      if (e.code === voiceKey && keyHeld) {
         const tag = (e.target as HTMLElement).tagName;
         if (tag === "INPUT" || tag === "TEXTAREA") return;
         e.preventDefault();
-        spaceHeld = false;
-        // Session continues for 10s after release
+        keyHeld = false;
       }
     }
 
@@ -233,7 +238,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10 }: SousChef
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, []);
+  }, [voiceKey]);
 
   // Tap button also starts session
   const listenForOneCommand = useCallback(() => {

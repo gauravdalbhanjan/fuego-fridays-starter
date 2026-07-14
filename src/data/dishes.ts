@@ -6,7 +6,7 @@
 export interface Dish {
   id: string;
   name: string;
-  image: string; // emoji placeholder
+  image: string; // path to image in /meals/ or emoji fallback
   cookTime: number; // minutes
   calories: number;
   ingredients: string[]; // maps to grocery item names
@@ -18,7 +18,7 @@ export const DISHES: Dish[] = [
   {
     id: "d1",
     name: "Caesar Salad",
-    image: "🥗",
+    image: "/meals/caesar-salad.png",
     cookTime: 10,
     calories: 350,
     ingredients: ["Spinach", "Chicken Breast", "Cheddar Cheese", "Sourdough", "Olive Oil"],
@@ -28,7 +28,7 @@ export const DISHES: Dish[] = [
   {
     id: "d2",
     name: "Bundt Cake",
-    image: "🍰",
+    image: "/meals/bundt-cake.png",
     cookTime: 60,
     calories: 350,
     ingredients: ["Eggs", "Butter", "Whole Milk"],
@@ -38,7 +38,7 @@ export const DISHES: Dish[] = [
   {
     id: "d3",
     name: "Chicken Strips",
-    image: "🍗",
+    image: "/meals/chicken-nuggets.png",
     cookTime: 15,
     calories: 500,
     ingredients: ["Chicken Breast", "Eggs", "Sourdough"],
@@ -48,7 +48,7 @@ export const DISHES: Dish[] = [
   {
     id: "d4",
     name: "Agliolio Spaghetti",
-    image: "🍝",
+    image: "/meals/spaghetti.png",
     cookTime: 12,
     calories: 550,
     ingredients: ["Pasta", "Olive Oil", "Onion", "Bell Peppers"],
@@ -58,7 +58,7 @@ export const DISHES: Dish[] = [
   {
     id: "d5",
     name: "Caesar Wrap",
-    image: "🌯",
+    image: "/meals/caesar-salad.png",
     cookTime: 8,
     calories: 420,
     ingredients: ["Tortillas", "Chicken Breast", "Spinach", "Cheddar Cheese"],
@@ -68,7 +68,7 @@ export const DISHES: Dish[] = [
   {
     id: "d6",
     name: "Bacon Ham Sandwich",
-    image: "🥪",
+    image: "/meals/sandwich.png",
     cookTime: 10,
     calories: 480,
     ingredients: ["Sourdough", "Tomatoes", "Spinach"],
@@ -78,7 +78,7 @@ export const DISHES: Dish[] = [
   {
     id: "d7",
     name: "Guacamole",
-    image: "🥑",
+    image: "/meals/guacamole.png",
     cookTime: 10,
     calories: 250,
     ingredients: ["Onion", "Tomatoes", "Bell Peppers"],
@@ -88,7 +88,7 @@ export const DISHES: Dish[] = [
   {
     id: "d8",
     name: "Chicken Stir Fry",
-    image: "🥘",
+    image: "/meals/turkey-dinner.png",
     cookTime: 20,
     calories: 450,
     ingredients: ["Chicken Breast", "Broccoli", "Carrots", "Bell Peppers", "Rice", "Olive Oil"],
@@ -97,8 +97,8 @@ export const DISHES: Dish[] = [
   },
   {
     id: "d9",
-    name: "Fruit Bowl",
-    image: "🍓",
+    name: "Poha Bowl",
+    image: "/meals/poha.png",
     cookTime: 5,
     calories: 180,
     ingredients: ["Apple", "Banana", "Berries", "Greek Yogurt"],
@@ -108,7 +108,7 @@ export const DISHES: Dish[] = [
   {
     id: "d10",
     name: "Veggie Omelette",
-    image: "🍳",
+    image: "/meals/turkey-dinner.png",
     cookTime: 12,
     calories: 320,
     ingredients: ["Eggs", "Spinach", "Tomatoes", "Cheddar Cheese", "Bell Peppers", "Onion"],
@@ -118,7 +118,7 @@ export const DISHES: Dish[] = [
   {
     id: "d11",
     name: "Grilled Salmon",
-    image: "🐟",
+    image: "/meals/turkey-dinner.png",
     cookTime: 18,
     calories: 380,
     ingredients: ["Salmon", "Zucchini", "Olive Oil", "Spinach"],
@@ -128,7 +128,7 @@ export const DISHES: Dish[] = [
   {
     id: "d12",
     name: "Banana Smoothie",
-    image: "🥤",
+    image: "/meals/poha.png",
     cookTime: 5,
     calories: 220,
     ingredients: ["Banana", "Whole Milk", "Greek Yogurt", "Berries"],
@@ -138,7 +138,7 @@ export const DISHES: Dish[] = [
   {
     id: "d13",
     name: "Pasta Bolognese",
-    image: "🍖",
+    image: "/meals/spaghetti.png",
     cookTime: 35,
     calories: 620,
     ingredients: ["Pasta", "Ground Beef", "Tomatoes", "Onion", "Carrots", "Olive Oil"],
@@ -148,7 +148,7 @@ export const DISHES: Dish[] = [
   {
     id: "d14",
     name: "Avocado Toast",
-    image: "🥑",
+    image: "/meals/sandwich.png",
     cookTime: 5,
     calories: 280,
     ingredients: ["Sourdough", "Eggs", "Tomatoes", "Spinach"],
@@ -157,12 +157,22 @@ export const DISHES: Dish[] = [
   },
   {
     id: "d15",
-    name: "Chicken Tacos",
-    image: "🌮",
+    name: "Chicken Burger",
+    image: "/meals/burger.png",
     cookTime: 20,
-    calories: 480,
+    calories: 580,
     ingredients: ["Tortillas", "Chicken Breast", "Onion", "Tomatoes", "Cheddar Cheese"],
     category: "dinner",
+    difficulty: "easy",
+  },
+  {
+    id: "d16",
+    name: "French Fries",
+    image: "/meals/fries.png",
+    cookTime: 15,
+    calories: 365,
+    ingredients: ["Carrots", "Olive Oil"],
+    category: "snack",
     difficulty: "easy",
   },
 ];

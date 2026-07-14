@@ -69,6 +69,19 @@ export default function App() {
   useEffect(() => { saveAlexaRules(alexaRules); }, [alexaRules]);
   useEffect(() => { saveAlexaConnection(alexaConn); }, [alexaConn]);
 
+  // Theme management
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    if (preferences.themeMode === "light") root.classList.add("light");
+    else if (preferences.themeMode === "dark") root.classList.add("dark");
+    else {
+      // System preference
+      if (window.matchMedia("(prefers-color-scheme: light)").matches) root.classList.add("light");
+      else root.classList.add("dark");
+    }
+  }, [preferences.themeMode]);
+
   // Auto-reorder
   useEffect(() => {
     if (!preferences.autoReorderEnabled || !preferences.autoAddCritical) return;
@@ -155,13 +168,19 @@ export default function App() {
       const match = items.find((i) => i.name.toLowerCase().includes(itemName));
       if (match && !match.inCart) addToCart(match.id);
     }
+    function handleTheme(e: Event) {
+      const mode = (e as CustomEvent).detail as "light" | "dark" | "system";
+      updatePreferences({ themeMode: mode });
+    }
     window.addEventListener("robin-navigate", handleNavigate);
     window.addEventListener("robin-cart-add", handleCartAdd);
+    window.addEventListener("robin-theme", handleTheme);
     return () => {
       window.removeEventListener("robin-navigate", handleNavigate);
       window.removeEventListener("robin-cart-add", handleCartAdd);
+      window.removeEventListener("robin-theme", handleTheme);
     };
-  }, [items, addToCart]);
+  }, [items, addToCart, updatePreferences]);
 
   if (showSettings) {
     return <SettingsPanel preferences={preferences} onUpdate={updatePreferences} items={items} onToggleAutoReorder={toggleAutoReorder} onBack={() => setShowSettings(false)} />;
@@ -171,7 +190,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#0d1117] text-[#e6edf3]">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       {showAutoNotification && (
         <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2">
           <div className="flex items-center gap-2 rounded-full bg-[#31a8ff] px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#31a8ff]/30">
@@ -207,7 +226,7 @@ export default function App() {
       </main>
 
       {/* Sous Chef */}
-      <SousChefChat lowStockCount={items.filter((i) => i.urgency === "critical").length} robinSleepTimeout={preferences.robinSleepTimeout} robinVoiceEnabled={preferences.robinVoiceEnabled} />
+      <SousChefChat lowStockCount={items.filter((i) => i.urgency === "critical").length} robinSleepTimeout={preferences.robinSleepTimeout} robinVoiceEnabled={preferences.robinVoiceEnabled} voiceKey={preferences.voiceActivationKey} />
 
       {/* Bottom nav — Alexa device style */}
       <nav className="fixed bottom-0 left-0 right-0 border-t border-[#30363d]/50 bg-[#0d1117]/95 px-4 py-2 backdrop-blur-xl">
@@ -287,7 +306,7 @@ function MenuPage({ items, availableItemNames }: { items: GroceryItem[]; availab
       {/* Dish cards */}
       <div>
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Suggested Dishes</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {dishesWithMatch.slice(0, 8).map((dish) => (
             <DishCard key={dish.id} dish={dish} />
           ))}
@@ -299,11 +318,16 @@ function MenuPage({ items, availableItemNames }: { items: GroceryItem[]; availab
 
 function DishCard({ dish }: { dish: Dish & { pantryMatch: number } }) {
   const matchColor = dish.pantryMatch >= 80 ? "text-[#3fb950] bg-[#3fb950]/10" : dish.pantryMatch >= 50 ? "text-[#f0883e] bg-[#f0883e]/10" : "text-[#f85149] bg-[#f85149]/10";
+  const isImagePath = dish.image.startsWith("/");
 
   return (
     <div className="overflow-hidden rounded-2xl bg-[#161b22] border border-[#30363d]/50 transition-transform hover:scale-[1.02] active:scale-[0.98]">
-      <div className="flex h-24 items-center justify-center bg-gradient-to-br from-[#21262d] to-[#161b22] text-4xl">
-        {dish.image}
+      <div className="h-[350px] w-full overflow-hidden bg-[#21262d]">
+        {isImagePath ? (
+          <img src={dish.image} alt={dish.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-6xl">{dish.image}</div>
+        )}
       </div>
       <div className="p-3">
         <p className="text-sm font-medium leading-tight">{dish.name}</p>
@@ -357,7 +381,9 @@ function ItemRow({ item, onAddToCart, onToggleAutoReorder }: { item: GroceryItem
   const isUrgent = item.urgency === "critical";
   return (
     <div className={cn("flex items-center gap-3 rounded-2xl px-3 py-3 transition-all", isUrgent && "bg-[#f0883e]/5 border border-[#f0883e]/20")}>
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#21262d] text-2xl">{item.image}</div>
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#21262d] overflow-hidden text-2xl">
+        {item.image.startsWith("/") ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : item.image}
+      </div>
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium">{item.name}</span>
         <div className="flex items-center gap-3 text-[11px] text-[#8b949e]">
@@ -403,8 +429,15 @@ function RoutineCard({ routine, onUpdate }: { routine: MealRoutine; onUpdate: (i
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-[#30363d]/50" style={{ height: "calc(100vh - 220px)", minHeight: "360px" }}>
-      {/* Alexa-style gradient bg with blue glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#161b22] to-[#0d1117]" />
+      {/* Background image or gradient */}
+      {routine.image ? (
+        <>
+          <img src={routine.image} alt={routine.mealType} className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-black/50" />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-[#161b22] to-[#0d1117]" />
+      )}
       <div className="absolute top-0 right-0 h-48 w-48 rounded-full bg-[#31a8ff]/8 blur-3xl" />
       <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-[#31a8ff]/5 blur-2xl" />
 
@@ -592,7 +625,7 @@ function CartPanel({ cart, onRemove, onBack }: { cart: GroceryItem[]; onRemove: 
     setOrdered(true);
   }
   return (
-    <div className="flex min-h-dvh flex-col bg-[#0d1117] text-[#e6edf3]">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="flex items-center gap-3 px-5 py-4">
         <button onClick={onBack} className="flex items-center gap-1.5 rounded-full bg-[#161b22] border border-[#30363d]/50 px-3 py-1.5 text-sm text-[#8b949e] hover:text-white">
           <ChevronLeft className="h-4 w-4" /> Back
@@ -643,7 +676,7 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
 }) {
   const autoReorderItems = items.filter((i) => i.autoReorder);
   return (
-    <div className="flex min-h-dvh flex-col bg-[#0d1117] text-[#e6edf3]">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="flex items-center gap-3 px-5 py-4">
         <button onClick={onBack} className="flex items-center gap-1.5 rounded-full bg-[#161b22] border border-[#30363d]/50 px-3 py-1.5 text-sm text-[#8b949e] hover:text-white">
           <ChevronLeft className="h-4 w-4" /> Back
@@ -669,10 +702,23 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
         </section>
         <section className="space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Robin Voice & Privacy</h3>
-          <ToggleRow label="Voice activation" description="Say 'Hey Robin' to wake up" checked={preferences.robinVoiceEnabled} onChange={(v) => onUpdate({ robinVoiceEnabled: v })} />
+          <ToggleRow label="Voice activation" description="Hold key to talk" checked={preferences.robinVoiceEnabled} onChange={(v) => onUpdate({ robinVoiceEnabled: v })} />
           <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm font-medium">Auto-sleep timeout</p><p className="text-xs text-[#8b949e]">Seconds before Robin stops listening (privacy)</p></div>
+              <div><p className="text-sm font-medium">Voice activation key</p><p className="text-xs text-[#8b949e]">Key to hold for voice commands</p></div>
+              <select value={preferences.voiceActivationKey} onChange={(e) => onUpdate({ voiceActivationKey: e.target.value })}
+                className="rounded-lg bg-[#21262d] border border-[#30363d] px-3 py-1.5 text-sm outline-none">
+                <option value="Space">Spacebar</option>
+                <option value="KeyR">R key</option>
+                <option value="KeyV">V key</option>
+                <option value="ControlLeft">Left Ctrl</option>
+                <option value="ShiftLeft">Left Shift</option>
+              </select>
+            </div>
+          </div>
+          <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
+            <div className="flex items-center justify-between">
+              <div><p className="text-sm font-medium">Auto-sleep timeout</p><p className="text-xs text-[#8b949e]">Seconds before Robin stops listening</p></div>
               <div className="flex items-center gap-2">
                 <button onClick={() => onUpdate({ robinSleepTimeout: Math.max(1, preferences.robinSleepTimeout - 1) })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#21262d] text-sm hover:bg-[#30363d]">−</button>
                 <span className="w-6 text-center font-bold">{preferences.robinSleepTimeout}s</span>
@@ -680,8 +726,21 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
               </div>
             </div>
           </div>
-          <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/30 p-3">
-            <p className="text-xs text-[#8b949e]">🔒 Robin auto-sleeps after {preferences.robinSleepTimeout}s of silence. Voice data is never stored or sent externally — all processing happens in your browser.</p>
+        </section>
+        <section className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Appearance</h3>
+          <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
+            <div className="flex items-center justify-between">
+              <div><p className="text-sm font-medium">Theme</p><p className="text-xs text-[#8b949e]">Alexa Echo UI style</p></div>
+              <div className="flex gap-1">
+                {(["system", "light", "dark"] as const).map((mode) => (
+                  <button key={mode} onClick={() => onUpdate({ themeMode: mode })}
+                    className={cn("rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all",
+                      preferences.themeMode === mode ? "bg-[#31a8ff] text-white" : "bg-[#21262d] text-[#8b949e] hover:text-white"
+                    )}>{mode}</button>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
         <section className="space-y-3">
