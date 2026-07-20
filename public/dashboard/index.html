@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomePulse Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Amazon Ember';
+            src: local('Amazon Ember'), local('AmazonEmber-Regular');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'Amazon Ember';
+            src: local('Amazon Ember Medium'), local('AmazonEmber-Medium');
+            font-weight: 500;
+        }
+        @font-face {
+            font-family: 'Amazon Ember';
+            src: local('Amazon Ember Bold'), local('AmazonEmber-Bold');
+            font-weight: 700;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Amazon Ember', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Top App Bar */
+        .app-bar {
+            position: fixed; top: 0; left: 0; right: 0; height: 48px;
+            background: #1a2332; display: flex; align-items: center;
+            padding: 0 16px; z-index: 1200; color: #fff;
+        }
+        .app-bar .app-icon { font-size: 20px; margin-right: 12px; cursor: pointer; }
+        .app-bar .app-title { font-size: 16px; font-weight: 500; }
+        .app-bar .spacer { flex: 1; }
+        .app-bar .toolbar-icons { display: flex; gap: 8px; }
+        .app-bar .toolbar-icons .material-icons { font-size: 22px; cursor: pointer; opacity: 0.87; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 180px; background: #1e2a3a; color: #fff; padding-top: 48px;
+            height: 100vh; position: fixed; left: 0; top: 0; overflow-y: auto;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-header span { font-weight: 500; font-size: 14px; }
+        .sidebar-header .material-icons { font-size: 18px; cursor: pointer; opacity: 0.7; }
+        .sidebar-nav { flex: 1; padding: 8px 0; }
+        .nav-item {
+            display: flex; align-items: center; padding: 10px 16px; cursor: pointer;
+            font-size: 13px; color: rgba(255,255,255,0.7); transition: background 0.2s;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.08); }
+        .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+        .nav-item .material-icons { font-size: 20px; margin-right: 12px; }
+        .nav-section { padding: 8px 16px 4px; font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.4); letter-spacing: 0.5px; }
+        .nav-section-header {
+            display: flex; align-items: center; padding: 10px 16px; cursor: pointer;
+            font-size: 13px; color: rgba(255,255,255,0.9);
+        }
+        .nav-section-header .material-icons { font-size: 20px; margin-right: 12px; }
+        .nav-section-header .expand { margin-left: auto; font-size: 18px; }
+        .nav-sub-item {
+            padding: 8px 16px 8px 48px; font-size: 13px; color: rgba(255,255,255,0.6);
+            cursor: pointer; transition: background 0.2s;
+        }
+        .nav-sub-item:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
+        .sidebar-footer {
+            padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-footer .nav-item { padding: 10px 0; }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 180px; margin-top: 48px; padding: 24px;
+            flex: 1; overflow-y: auto; height: calc(100vh - 48px);
+        }
+
+        /* Welcome Section */
+        .welcome h1 {
+            font-size: 24px; font-weight: 700; margin-bottom: 4px;
+            background: linear-gradient(90deg, #4fc3f7 0%, #1976d2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .welcome p { font-size: 13px; color: #666; margin-bottom: 16px; }
+
+        /* Last Refresh */
+        .welcome-row {
+            display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px;
+        }
+        .last-refresh {
+            background: #fff; border: 1px solid #e0e0e0; border-radius: 6px;
+            padding: 10px 14px; display: flex; align-items: center; gap: 12px;
+            font-size: 12px; color: #888; white-space: nowrap;
+        }
+        .last-refresh .refresh-btn {
+            width: 32px; height: 32px; border: 1px solid #90caf9; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            background: #fff;
+        }
+        .last-refresh .refresh-btn .material-icons { font-size: 18px; color: #1976d2; }
+        .last-refresh .label { font-weight: 600; color: #1a2332; font-size: 13px; }
+        .last-refresh .time { color: #888; font-size: 12px; }
+
+        /* Stats Row */
+        .stats-row {
+            display: flex; gap: 24px; margin-bottom: 16px; padding: 12px 16px;
+            background: #fff; border-radius: 6px; border: 1px solid #e0e0e0;
+        }
+        .stat-item { flex: 1; }
+        .stat-item .stat-label { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; }
+        .stat-item .stat-label .material-icons { font-size: 14px; color: #999; }
+        .stat-item .stat-value { font-size: 20px; font-weight: 700; color: #1a2332; }
+        .stat-item .stat-change { font-size: 11px; color: #4caf50; }
+        .stat-change.up { color: #4caf50; }
+        .stat-change.down { color: #f44336; }
+        .tick-up { animation: tickUp 0.4s ease; }
+        .tick-down { animation: tickDown 0.4s ease; }
+        @keyframes tickUp {
+            0% { transform: translateY(4px); opacity: 0.5; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes tickDown {
+            0% { transform: translateY(-4px); opacity: 0.5; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Filters Row */
+        .filters-row {
+            display: flex; align-items: flex-end; margin-bottom: 20px;
+            padding: 10px 16px; background: #fff; border-radius: 6px; border: 1px solid #e0e0e0;
+        }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; position: relative; }
+        .filter-group label { font-size: 11px; color: #666; font-weight: 400; }
+        .filter-input-wrapper {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .filter-value {
+            font-size: 14px; font-weight: 400; color: #1a2332; white-space: nowrap;
+        }
+        .filter-icons {
+            display: flex; align-items: center; gap: 2px; margin-left: auto;
+        }
+        .filter-icons .material-icons { font-size: 18px; color: #666; cursor: pointer; }
+        .filter-divider {
+            width: 1px; height: 36px; background: #e0e0e0; margin: 0 16px; align-self: center;
+        }
+        .filters-row .actions {
+            display: flex; align-items: center; gap: 8px; margin-left: auto; padding-left: 16px;
+        }
+        .btn-reset {
+            padding: 8px 20px; border: none; background: transparent;
+            color: #1976d2; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 6px;
+        }
+        .btn-apply {
+            padding: 8px 20px; border: none; background: #1565c0;
+            color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 6px;
+        }
+
+        /* Filter Dropdowns */
+        .filter-dropdown {
+            border: none; outline: none; font-size: 14px; font-weight: 400;
+            color: #1a2332; background: transparent; cursor: pointer;
+            font-family: inherit; -webkit-appearance: none; appearance: none;
+            padding-right: 4px; flex: 1;
+        }
+        .filter-input-wrapper {
+            display: flex; align-items: center; gap: 6px; cursor: pointer;
+        }
+        .filter-input-wrapper .filter-icons {
+            display: flex; align-items: center; gap: 2px; margin-left: auto; cursor: pointer;
+        }
+        .filter-input-wrapper .filter-icons .material-icons { font-size: 18px; color: #666; cursor: pointer; }
+        .date-range-trigger { cursor: pointer; }
+
+        /* Date Range Picker */
+        .date-range-picker {
+            display: none; position: absolute; top: 100%; left: 0;
+            background: #fff; border: 1px solid #e0e0e0; border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 1000;
+            padding: 20px; margin-top: 8px; width: max-content; min-width: 500px;
+        }
+        .date-range-picker.open { display: block; }
+        .drp-calendars { display: flex; gap: 24px; }
+        .drp-calendar { flex: 1; min-width: 0; }
+        .drp-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .drp-month-title { font-size: 15px; font-weight: 600; color: #1a2332; flex: 1; text-align: center; }
+        .drp-nav { font-size: 20px; color: #666; cursor: pointer; }
+        .drp-nav:hover { color: #1976d2; }
+        .drp-weekdays {
+            display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+            margin-bottom: 8px;
+        }
+        .drp-weekdays span { font-size: 12px; color: #999; font-weight: 500; padding: 4px 0; }
+        .drp-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 2px; }
+        .drp-day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #333; cursor: pointer; border-radius: 50%;
+            transition: background 0.2s; width: 100%; max-width: 36px; margin: 0 auto;
+        }
+        .drp-day:hover { background: #e3f2fd; }
+        .drp-day.other-month { color: #ccc; }
+        .drp-day.selected { background: #1976d2; color: #fff; }
+        .drp-day.in-range { background: #e3f2fd; border-radius: 0; }
+        .drp-day.range-start { background: #1976d2; color: #fff; border-radius: 50% 0 0 50%; }
+        .drp-day.range-end { background: #1976d2; color: #fff; border-radius: 0 50% 50% 0; }
+        .drp-day.today { border: 1px solid #1976d2; }
+        .drp-footer {
+            display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;
+            padding-top: 12px; border-top: 1px solid #e0e0e0;
+        }
+        .drp-btn-cancel {
+            padding: 8px 16px; border: none; background: transparent;
+            color: #1976d2; font-size: 13px; font-weight: 500; cursor: pointer;
+        }
+        .drp-btn-ok {
+            padding: 8px 16px; border: none; background: transparent;
+            color: #1976d2; font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+
+        /* Responsive Date Picker */
+        @media (max-width: 900px) {
+            .date-range-picker { min-width: 360px; padding: 14px; }
+            .drp-calendars { gap: 12px; }
+            .drp-day { font-size: 11px; }
+            .drp-month-title { font-size: 13px; }
+            .drp-weekdays span { font-size: 10px; }
+        }
+        @media (max-width: 650px) {
+            .date-range-picker { min-width: 260px; padding: 10px; }
+            .drp-calendars { flex-direction: column; gap: 16px; }
+            .drp-day { font-size: 12px; }
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 15px; font-weight: 600; color: #1a2332; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .section-title .material-icons { font-size: 16px; color: #999; }
+
+        /* Metrics Cards */
+        .metrics-row { display: flex; gap: 16px; margin-bottom: 24px; }
+        .metric-card {
+            flex: 1; padding: 16px; border-radius: 6px; border: 1px solid #e0e0e0; background: #fff;
+        }
+        .metric-card.at-risk { border-left: 4px solid #f44336; background: #fff5f5; }
+        .metric-card.watch { border-left: 4px solid #ff9800; background: #fff8e1; }
+        .metric-card-title {
+            font-size: 12px; font-weight: 500; color: #333; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .metric-card-title .material-icons { font-size: 14px; color: #999; }
+
+        /* Donut Chart */
+        .donut-container { display: flex; align-items: center; gap: 16px; padding: 12px 0; }
+        .donut-chart {
+            width: 120px; height: 120px; position: relative;
+        }
+        .donut-chart svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .donut-segment { cursor: pointer; transition: opacity 0.2s, stroke-width 0.2s; stroke-linecap: round; }
+        .donut-segment:hover { stroke-width: 18; opacity: 0.9; }
+        .donut-tooltip {
+            position: fixed; 
+            background: #333; color: #fff; padding: 4px 8px; border-radius: 4px;
+            font-size: 12px; font-weight: 600; white-space: nowrap;
+            pointer-events: none; opacity: 0; transition: opacity 0.2s;
+            z-index: 1000;
+        }
+        .donut-tooltip.visible { opacity: 1; }
+        .donut-percentages { display: none; }
+        .donut-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 36px; font-weight: 700; color: #1a2332;
+        }
+        .donut-legend { font-size: 12px; color: #666; }
+        .donut-legend div { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+        .legend-dot.red { background: #f44336; }
+        .legend-dot.orange { background: #ff9800; }
+        .donut-percentages { display: flex; gap: 16px; margin-bottom: 8px; }
+        .donut-percentages span { font-size: 12px; color: #666; }
+
+        /* At Risk / Watch Cards */
+        .alert-card { padding: 16px; }
+        .alert-card .alert-icon { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .alert-card .alert-icon .material-icons { font-size: 18px; }
+        .alert-card .alert-icon.risk .material-icons { color: #f44336; }
+        .alert-card .alert-icon.watch .material-icons { color: #ff9800; }
+        .alert-card .alert-title { font-size: 14px; font-weight: 600; color: #333; }
+        .alert-card .alert-desc { font-size: 11px; color: #666; margin-bottom: 8px; }
+        .alert-card .alert-number { font-size: 32px; font-weight: 700; }
+        .alert-card .alert-number.risk { color: #f44336; }
+        .alert-card .alert-number.watch { color: #ff9800; }
+        .alert-card .alert-links { font-size: 12px; color: #333; }
+        .alert-card .alert-links a { color: #1976d2; text-decoration: underline; }
+
+        /* Products Glance */
+        .products-header {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+        }
+        .products-header .left { display: flex; align-items: center; gap: 8px; }
+        .products-header .left .title { font-size: 15px; font-weight: 600; color: #1a2332; }
+        .products-header .left .count {
+            background: #e0e0e0; border-radius: 10px; padding: 2px 8px;
+            font-size: 11px; font-weight: 500;
+        }
+        .products-header .left .accordion-toggle {
+            font-size: 20px; cursor: pointer; color: #666; transition: transform 0.3s;
+        }
+        .products-header .left .accordion-toggle.collapsed { transform: rotate(180deg); }
+        .products-header .right { display: flex; align-items: center; gap: 12px; }
+        .tab-group { display: flex; border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; height: 40px; }
+        .tab-group .tab {
+            padding: 0 18px; font-size: 14px; cursor: pointer; background: #fff;
+            border: none; color: #666; font-weight: 500; display: flex; align-items: center;
+        }
+        .tab-group .tab.active { background: #fff; color: #1976d2; font-weight: 600; }
+        .sort-fieldset {
+            border: 1px solid #e0e0e0; border-radius: 6px; padding: 4px 12px 6px; margin: 0;
+            position: relative; height: 40px; display: flex; align-items: center;
+        }
+        .sort-fieldset legend {
+            font-size: 11px; color: #666; padding: 0 4px; font-weight: 400;
+        }
+        .sort-fieldset select {
+            border: none; outline: none; font-size: 14px; font-weight: 500;
+            background: transparent; color: #1a2332; min-width: 180px; cursor: pointer;
+            font-family: inherit; -webkit-appearance: none; appearance: none;
+        }
+        .sort-fieldset .sort-arrow {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            font-size: 20px; color: #666; pointer-events: none;
+        }
+        .products-content { transition: max-height 0.3s ease, opacity 0.3s ease; overflow: hidden; }
+        .products-content.collapsed { max-height: 0; opacity: 0; }
+
+        /* Product Row */
+        .product-row {
+            background: #fff; border: 1px solid #e0e0e0; border-radius: 6px;
+            padding: 14px 16px; margin-bottom: 8px; position: relative;
+            border-left: 4px solid transparent;
+        }
+        .product-row.row-at-risk { border-left-color: #f44336; }
+        .product-row.row-watch { border-left-color: #ffc107; }
+        .product-row.row-good { border-left-color: #4caf50; }
+        .product-row-header {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+        }
+        .product-row-header .left { display: flex; align-items: center; gap: 8px; }
+        .product-name { font-size: 14px; font-weight: 600; color: #1a2332; }
+        .badge {
+            padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase;
+        }
+        .badge.at-risk { background: #f44336; color: #fff; }
+        .badge.watch { background: #ff9800; color: #fff; }
+        .badge.healthy { background: #4caf50; color: #fff; }
+        .product-row-header .right { display: flex; align-items: center; gap: 8px; }
+        .view-details { font-size: 12px; color: #1976d2; cursor: pointer; font-weight: 500; }
+        .heart-icon { color: #f44336; font-size: 18px; cursor: pointer; }
+        .performance-text { font-size: 12px; color: #666; margin-bottom: 8px; }
+        .performance-text strong { color: #333; }
+        .performance-inline {
+            font-size: 13px; color: #666; font-weight: 500;
+            display: inline-flex; align-items: center; gap: 2px;
+        }
+        .performance-inline strong { margin-right: 1px; }
+        .product-metrics { display: flex; gap: 24px; }
+        .product-metric { }
+        .product-metric .pm-label { font-size: 11px; color: #666; display: flex; align-items: center; gap: 4px; }
+        .product-metric .pm-label .material-icons { font-size: 13px; }
+        .product-metric .pm-value { font-size: 13px; font-weight: 600; }
+        .pm-value .current { color: #1a2332; }
+        .pm-value .target { color: #666; }
+        .pm-value .dot { margin-left: 4px; }
+        .pm-value .dot.green { color: #4caf50; }
+        .pm-value .dot.red { color: #f44336; }
+        .pm-value .dot.orange { color: #ff9800; }
+
+        .content-wrapper { position: relative; }
+
+        /* Theme Toggle Button */
+        .theme-toggle { position: relative; }
+        .theme-toggle .material-icons { cursor: pointer; }
+
+        /* ===== DARK MODE ===== */
+        body.dark-mode { background: #0d1b2a; }
+        body.dark-mode .main-content { background: #0d1b2a; }
+        body.dark-mode .sidebar { background: #0f1c2e; }
+        body.dark-mode .welcome h1 {
+            background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        body.dark-mode .welcome p { color: rgba(255,255,255,0.7); }
+
+        body.dark-mode .last-refresh {
+            background: #132238; border-color: #1e3a5f;
+        }
+        body.dark-mode .last-refresh .label { color: rgba(255,255,255,0.9); }
+        body.dark-mode .last-refresh .time { color: rgba(255,255,255,0.5); }
+        body.dark-mode .last-refresh .refresh-btn { background: #132238; border-color: #1e3a5f; }
+
+        body.dark-mode .stats-row {
+            background: #0d1b2a; border-color: #1e3a5f;
+        }
+        body.dark-mode .stat-item .stat-label { color: #4fc3f7; }
+        body.dark-mode .stat-item .stat-value { color: #fff; }
+
+        body.dark-mode .filters-row {
+            background: #0d1b2a; border-color: #1e3a5f;
+        }
+        body.dark-mode .filter-group label { color: #4fc3f7; }
+        body.dark-mode .filter-value { color: #fff; }
+        body.dark-mode .filter-dropdown { color: #fff; }
+        body.dark-mode .filter-dropdown option { background: #132238; color: #fff; }
+        body.dark-mode .filter-icons .material-icons { color: rgba(255,255,255,0.5); }
+        body.dark-mode .filter-divider { background: #1e3a5f; }
+        body.dark-mode .date-range-picker {
+            background: #132238; border-color: #1e3a5f;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        body.dark-mode .drp-month-title { color: #fff; }
+        body.dark-mode .drp-nav { color: rgba(255,255,255,0.6); }
+        body.dark-mode .drp-weekdays span { color: rgba(255,255,255,0.5); }
+        body.dark-mode .drp-day { color: rgba(255,255,255,0.8); }
+        body.dark-mode .drp-day.other-month { color: rgba(255,255,255,0.2); }
+        body.dark-mode .drp-day:hover { background: #1e3a5f; }
+        body.dark-mode .drp-day.in-range { background: #1e3a5f; }
+        body.dark-mode .drp-day.today { border-color: #64b5f6; }
+        body.dark-mode .drp-footer { border-color: #1e3a5f; }
+        body.dark-mode .drp-btn-cancel { color: #64b5f6; }
+        body.dark-mode .drp-btn-ok { color: #64b5f6; }
+
+        body.dark-mode .section-title { color: #fff; }
+
+        body.dark-mode .metric-card {
+            background: #0a1628; border-color: #1e3a5f;
+        }
+        body.dark-mode .metric-card.at-risk {
+            background: linear-gradient(135deg, #1a0a0a 0%, #4a1010 40%, #8b1a1a 100%);
+            border-color: #5c1a1a; border-left: 4px solid #f44336;
+        }
+        body.dark-mode .metric-card.watch {
+            background: linear-gradient(135deg, #1a1400 0%, #4a3510 40%, #8b6914 100%);
+            border-color: #5c4a1a; border-left: 4px solid #ff9800;
+        }
+        body.dark-mode .metric-card-title { color: rgba(255,255,255,0.9); }
+        body.dark-mode .donut-center { color: #fff; }
+        body.dark-mode .donut-legend { color: rgba(255,255,255,0.7); }
+
+        body.dark-mode .alert-card .alert-title { color: #fff; }
+        body.dark-mode .alert-card .alert-desc { color: rgba(255,255,255,0.6); }
+        body.dark-mode .alert-card .alert-links { color: rgba(255,255,255,0.8); }
+        body.dark-mode .alert-card .alert-links a { color: #64b5f6; }
+
+        body.dark-mode .products-header .left span { color: #fff !important; }
+        body.dark-mode .products-header .left .count { background: #1e3a5f; color: #fff; }
+        body.dark-mode .products-header .left .title { color: #fff; }
+        body.dark-mode .products-header .left .accordion-toggle { color: rgba(255,255,255,0.7); }
+        body.dark-mode .tab-group { border-color: #1e3a5f; }
+        body.dark-mode .tab-group .tab { background: #132238; color: rgba(255,255,255,0.6); }
+        body.dark-mode .tab-group .tab.active { background: #132238; color: #64b5f6; }
+        body.dark-mode .sort-fieldset { border-color: #1e3a5f; }
+        body.dark-mode .sort-fieldset legend { color: rgba(255,255,255,0.5); }
+        body.dark-mode .sort-fieldset select { color: #fff; }
+        body.dark-mode .sort-fieldset .sort-arrow { color: rgba(255,255,255,0.5); }
+
+        body.dark-mode .product-row {
+            background: #0a1628; border-color: #1e3a5f;
+        }
+        body.dark-mode .product-row.row-at-risk {
+            background: linear-gradient(90deg, #3d0a0a 0%, #1a0505 15%, #0a1628 40%);
+            border-color: #3d1515; border-left: 4px solid #f44336;
+        }
+        body.dark-mode .product-row.row-watch {
+            background: linear-gradient(90deg, #3d2a0a 0%, #1a1505 15%, #0a1628 40%);
+            border-color: #3d3015; border-left: 4px solid #ff9800;
+        }
+        body.dark-mode .product-row.row-good {
+            background: linear-gradient(90deg, #0a3d1a 0%, #051a0a 15%, #0a1628 40%);
+            border-color: #153d20; border-left: 4px solid #4caf50;
+        }
+        body.dark-mode .product-name { color: #fff; }
+        body.dark-mode .performance-text { color: rgba(255,255,255,0.6); }
+        body.dark-mode .performance-text strong { color: rgba(255,255,255,0.9); }
+        body.dark-mode .performance-inline { color: rgba(255,255,255,0.7); }
+        body.dark-mode .product-metric .pm-label { color: rgba(255,255,255,0.5); }
+        body.dark-mode .pm-value .target { color: rgba(255,255,255,0.5); }
+        body.dark-mode .view-details { color: #64b5f6; }
+
+        body.dark-mode .btn-reset { color: #64b5f6; }
+    </style>
+</head>
+<body>
+    <!-- App Bar -->
+    <div class="app-bar">
+        <a href="/" class="material-icons app-icon" style="color:#fff;text-decoration:none;">apps</a>
+        <span class="app-title">HomePulse</span>
+        <div class="spacer"></div>
+        <div class="toolbar-icons">
+            <span class="material-icons">dashboard</span>
+            <span class="material-icons theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">dark_mode</span>
+            <span class="material-icons">help_outline</span>
+            <span class="material-icons">account_circle</span>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <span>HomePulse</span>
+            <span class="material-icons">chevron_left</span>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item active">
+                <span class="material-icons">dashboard</span> Dashboard
+            </div>
+            <div class="nav-section-header">
+                <span class="material-icons">favorite_border</span> Quick Access
+                <span class="material-icons expand">expand_less</span>
+            </div>
+            <div id="favoritesList">
+            <div class="nav-sub-item" data-fav="energy">Energy</div>
+            <div class="nav-sub-item" data-fav="security">Security</div>
+            <div class="nav-sub-item" data-fav="pantry" onclick="window.location.href='/'" style="cursor:pointer;">PantryPilot</div>
+            </div>
+
+            <div class="nav-section-header">
+                <span class="material-icons">apps</span> All Categories
+                <span class="material-icons expand">expand_less</span>
+            </div>
+            <div class="nav-sub-item">Energy & Utilities</div>
+            <div class="nav-sub-item">Grocery & Food</div>
+            <div class="nav-sub-item">Cleaning Supplies</div>
+            <div class="nav-sub-item">Security & Cameras</div>
+            <div class="nav-sub-item">Smart Devices</div>
+            <div class="nav-sub-item">Calendar & Routine</div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="nav-item">
+                <span class="material-icons">add_box</span> Add Category
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-wrapper">
+            <!-- Welcome + Last Refresh Row -->
+            <div class="welcome-row">
+                <div class="welcome">
+                    <h1>Welcome, John!</h1>
+                </div>
+                <div class="last-refresh">
+                    <div>
+                        <div class="label">Last Refresh</div>
+                        <div class="time" id="lastRefreshTime"></div>
+                    </div>
+                    <div class="refresh-btn" id="refreshBtn">
+                        <span class="material-icons">sync</span>
+                    </div>
+                </div>
+            </div>
+            <div class="welcome">
+                <p>HomePulse - Your one-stop hub to monitor product performance and health across Product suite.</p>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-label">Total Active Users <span class="material-icons">info_outline</span></div>
+                    <div class="stat-value" id="statActiveUsers">30,234</div>
+                    <div class="stat-change" id="statActiveChange">+12.4% vs. previous BD</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Unique Users <span class="material-icons">info_outline</span></div>
+                    <div class="stat-value" id="statUniqueUsers">30,234</div>
+                    <div class="stat-change" id="statUniqueChange">+12.4% vs. previous BD</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Hits <span class="material-icons">info_outline</span></div>
+                    <div class="stat-value" id="statTotalHits">30,234</div>
+                    <div class="stat-change" id="statHitsChange">+12.4% vs. previous BD</div>
+                </div>
+            </div>
+
+            <!-- Filters Row -->
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label>Metric View</label>
+                    <div class="filter-input-wrapper">
+                        <select class="filter-dropdown" id="metricViewSelect">
+                            <option value="all">All Products</option>
+                            <option value="constellation">Constellation</option>
+                            <option value="budget-planner">Budget Planner</option>
+                            <option value="budget-tracker">Budget Tracker</option>
+                            <option value="finhome">FinHome</option>
+                            <option value="ai">AI</option>
+                            <option value="calendar">Calendar</option>
+                        </select>
+                        <div class="filter-icons">
+                            <span class="material-icons">info_outline</span>
+                            <span class="material-icons">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-divider"></div>
+                <div class="filter-group">
+                    <label>Period</label>
+                    <div class="filter-input-wrapper">
+                        <select class="filter-dropdown" id="periodSelect">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="annually">Annually</option>
+                            <option value="three-years">Three Years</option>
+                        </select>
+                        <div class="filter-icons">
+                            <span class="material-icons">info_outline</span>
+                            <span class="material-icons">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-divider"></div>
+                <div class="filter-group">
+                    <label>Date Range</label>
+                    <div class="filter-input-wrapper">
+                        <span class="filter-value date-range-trigger" id="dateRangeTrigger">Today</span>
+                        <div class="filter-icons">
+                            <span class="material-icons">info_outline</span>
+                            <span class="material-icons" style="cursor:pointer;" id="dateRangeArrow">arrow_drop_down</span>
+                        </div>
+                    </div>
+                    <!-- Date Range Picker -->
+                    <div class="date-range-picker" id="dateRangePicker">
+                        <div class="drp-calendars">
+                            <div class="drp-calendar">
+                                <div class="drp-header">
+                                    <span class="material-icons drp-nav" id="prevMonth">chevron_left</span>
+                                    <span class="drp-month-title" id="leftMonthTitle">December 2023</span>
+                                </div>
+                                <div class="drp-weekdays">
+                                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                                </div>
+                                <div class="drp-days" id="leftCalDays"></div>
+                            </div>
+                            <div class="drp-calendar">
+                                <div class="drp-header">
+                                    <span class="drp-month-title" id="rightMonthTitle">January 2024</span>
+                                    <span class="material-icons drp-nav" id="nextMonth">chevron_right</span>
+                                </div>
+                                <div class="drp-weekdays">
+                                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                                </div>
+                                <div class="drp-days" id="rightCalDays"></div>
+                            </div>
+                        </div>
+                        <div class="drp-footer">
+                            <button class="drp-btn-cancel" id="drpCancel">Cancel</button>
+                            <button class="drp-btn-ok" id="drpOk">Ok</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn-reset" id="filterReset">Reset</button>
+                    <button class="btn-apply" id="filterApply">Apply</button>
+                </div>
+            </div>
+
+            <!-- Suite Level Metrics -->
+            <div class="section-title">Suite Level Metrics</div>
+            <div class="metrics-row">
+                <!-- Products Requiring Attention -->
+                <div class="metric-card">
+                    <div class="metric-card-title">Products Requiring Attention <span class="material-icons">info_outline</span></div>
+                    <div class="donut-container">
+                        <div class="donut-chart" id="donutChart">
+                            <svg viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#e0e0e0" stroke-width="14"/>
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#f44336" stroke-width="14"
+                                    stroke-dasharray="209.4 104.7" stroke-dashoffset="0" class="donut-segment" id="donutRed" stroke-linecap="round"/>
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#ffc107" stroke-width="14"
+                                    stroke-dasharray="104.7 209.4" stroke-dashoffset="-209.4" class="donut-segment" id="donutYellow" stroke-linecap="round"/>
+                            </svg>
+                            <div class="donut-center">3</div>
+                        </div>
+                        <div class="donut-legend">
+                            <div><span class="legend-dot red"></span> At Risk</div>
+                            <div><span class="legend-dot orange"></span> Watch</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- At Risk Card -->
+                <div class="metric-card at-risk">
+                    <div class="alert-card">
+                        <div class="alert-icon risk">
+                            <span class="material-icons">error</span>
+                            <span class="alert-title">At Risk</span>
+                        </div>
+                        <div class="alert-desc">Success Score &lt; 50%</div>
+                        <div class="alert-number risk">2</div>
+                        <div class="alert-links">Budget &bull; <a href="#">Budget Tracker</a></div>
+                    </div>
+                </div>
+
+                <!-- Watch Card -->
+                <div class="metric-card watch">
+                    <div class="alert-card">
+                        <div class="alert-icon watch">
+                            <span class="material-icons">warning</span>
+                            <span class="alert-title">Watch</span>
+                        </div>
+                        <div class="alert-desc">Score 50-69% or declining performance for two consecutive periods</div>
+                        <div class="alert-number watch">1</div>
+                        <div class="alert-links"><a href="#">FinHome</a></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Glance View -->
+            <div class="products-header">
+                <div class="left">
+                    <span class="title">Products Glance View</span>
+                    <span class="count">6</span>
+                    <span class="material-icons accordion-toggle" id="productsToggle">expand_less</span>
+                </div>
+                <div class="right">
+                    <div class="tab-group">
+                        <button class="tab active" id="tabFavorites">Favorites</button>
+                        <button class="tab" id="tabAllProducts">All Products</button>
+                    </div>
+                    <fieldset class="sort-fieldset">
+                        <legend>Sort By</legend>
+                        <select id="sortBySelect">
+                            <option value="at-risk-first">Status (At Risk First)</option>
+                            <option value="at-risk">At Risk</option>
+                            <option value="on-watch">On Watch</option>
+                            <option value="good">Good</option>
+                            <option value="all">All</option>
+                        </select>
+                        <span class="material-icons sort-arrow">arrow_drop_down</span>
+                    </fieldset>
+                </div>
+            </div>
+
+            <div class="products-content" id="productsContent">
+            <!-- Budget Planner -->
+            <div class="product-row row-at-risk" data-product="budget-planner">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Budget Planner</span>
+                        <span class="badge at-risk">At Risk</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #f44336;">0</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Allocation Runs <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">234</span>/<span class="target">350</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Active Users <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">512</span>/<span class="target">800</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Successful Run Rate <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">76.5%</span>/<span class="target">90%</span> <span class="dot red">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Tracker -->
+            <div class="product-row row-at-risk" data-product="budget-tracker">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Budget Tracker</span>
+                        <span class="badge at-risk">At Risk</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #f44336;">0</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Transactions Processed <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">1,245</span>/<span class="target">2,000</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Active Users <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">389</span>/<span class="target">600</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Sync Success Rate <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">62.3%</span>/<span class="target">95%</span> <span class="dot red">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FinHome -->
+            <div class="product-row row-watch" data-product="finhome">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">FinHome</span>
+                        <span class="badge watch">On Watch</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #ff9800;">1</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Total Unique Users <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">234</span>/<span class="target">350</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Active Users <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">-512</span>/<span class="target">800</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Total Hits <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">76.5%</span>/<span class="target">90%</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI -->
+            <div class="product-row row-watch" data-product="ai">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">AI</span>
+                        <span class="badge watch">On Watch</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #ff9800;">1</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Model Accuracy <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #ff9800;">78.2%</span>/<span class="target">90%</span> <span class="dot orange">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">API Latency <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">320ms</span>/<span class="target">200ms</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Requests/min <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">1,450</span>/<span class="target">1,200</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Constellation -->
+            <div class="product-row row-good" data-product="constellation">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Constellation</span>
+                        <span class="badge healthy">Good</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #4caf50;">3</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Desk Prep Time <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">12.3 min</span>/<span class="target">15.0 min</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Bridge Creation Time <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">8.5 min</span>/<span class="target">10.0 min</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Issue Count <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">3</span>/<span class="target">5</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar -->
+            <div class="product-row row-good" data-product="calendar">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Calendar</span>
+                        <span class="badge healthy">Good</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #4caf50;">3</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Events Synced <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">12,450</span>/<span class="target">12,000</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Active Users <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">890</span>/<span class="target">800</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Uptime <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">99.8%</span>/<span class="target">99.5%</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Energy Consumption -->
+            <div class="product-row row-watch" data-product="energy">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Energy Consumption</span>
+                        <span class="badge watch">At Risk</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #ff9800;">2</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite_border</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Monthly Usage <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #ff9800;">342 kWh</span>/<span class="target">300 kWh</span> <span class="dot orange">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Solar Generation <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">128 kWh</span>/<span class="target">100 kWh</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Cost This Month <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">$89.40</span>/<span class="target">$75.00</span> <span class="dot red">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grocery & Food -->
+            <div class="product-row row-good" data-product="grocery">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Grocery & Food</span>
+                        <span class="badge healthy">Good</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #4caf50;">3</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite_border</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Monthly Spend <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">$487</span>/<span class="target">$550</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Items Tracked <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">29</span>/<span class="target">25</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Waste Rate <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">4.2%</span>/<span class="target">8%</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cleaning Supplies -->
+            <div class="product-row row-watch" data-product="cleaning">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Cleaning Supplies</span>
+                        <span class="badge watch">At Risk</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #ff9800;">1</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite_border</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Items In Stock <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #ff9800;">14</span>/<span class="target">20</span> <span class="dot orange">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Running Low <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #f44336;">3</span>/<span class="target">0</span> <span class="dot red">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Next Order <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">5 days</span>/<span class="target">7 days</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Feed -->
+            <div class="product-row row-good" data-product="security">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Security Feed</span>
+                        <span class="badge healthy">Good</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #4caf50;">3</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite_border</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Cameras Online <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">4</span>/<span class="target">4</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Motion Events Today <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">2</span>/<span class="target">10</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Storage Used <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">67%</span>/<span class="target">85%</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Devices -->
+            <div class="product-row row-good" data-product="smart-devices">
+                <div class="product-row-header">
+                    <div class="left">
+                        <span class="product-name">Smart Devices</span>
+                        <span class="badge healthy">Good</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">track_changes</span>
+                        <span class="performance-inline"><strong style="color: #4caf50;">3</strong>/3 on target</span>
+                        <span class="material-icons" style="font-size: 16px; color: #999;">info_outline</span>
+                    </div>
+                    <div class="right">
+                        <span class="view-details">View Details</span>
+                        <span class="material-icons heart-icon">favorite_border</span>
+                    </div>
+                </div>
+                <div class="product-metrics">
+                    <div class="product-metric">
+                        <div class="pm-label">Devices Connected <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">18</span>/<span class="target">18</span> <span class="dot green">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Firmware Updates <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #ff9800;">2 pending</span>/<span class="target">0</span> <span class="dot orange">●</span></div>
+                    </div>
+                    <div class="product-metric">
+                        <div class="pm-label">Network Uptime <span class="material-icons">info_outline</span></div>
+                        <div class="pm-value"><span class="current" style="color: #4caf50;">99.9%</span>/<span class="target">99.5%</span> <span class="dot green">●</span></div>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="donut-tooltip" id="donutTooltip">66.7%</div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                themeToggle.textContent = 'light_mode';
+                themeToggle.title = 'Switch to Light Mode';
+            } else {
+                themeToggle.textContent = 'dark_mode';
+                themeToggle.title = 'Switch to Dark Mode';
+            }
+        });
+
+        // Live Time Update
+        function updateTime() {
+            const now = new Date();
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('en-US', options);
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('lastRefreshTime').textContent = dateStr + ', ' + timeStr;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Refresh button
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            updateTime();
+        });
+
+        // Make clicking anywhere in filter wrapper open the select dropdown
+        document.querySelectorAll('.filter-group').forEach(function(group) {
+            const select = group.querySelector('.filter-dropdown');
+            if (select) {
+                group.addEventListener('click', function(e) {
+                    if (e.target !== select) {
+                        select.focus();
+                        select.click();
+                        // For browsers that need showPicker
+                        if (typeof select.showPicker === 'function') {
+                            try { select.showPicker(); } catch(err) {}
+                        }
+                    }
+                });
+            }
+            // Date Range - clicking anywhere in its filter-group opens the calendar
+            const dateRangeTriggerEl = group.querySelector('#dateRangeTrigger');
+            if (dateRangeTriggerEl) {
+                group.addEventListener('click', function(e) {
+                    const picker = document.getElementById('dateRangePicker');
+                    if (!picker.contains(e.target) && e.target.id !== 'drpCancel' && e.target.id !== 'drpOk') {
+                        if (!picker.classList.contains('open')) {
+                            picker.classList.add('open');
+                        }
+                    }
+                });
+            }
+        });
+
+        // Filter Reset
+        document.getElementById('filterReset').addEventListener('click', function() {
+            document.getElementById('metricViewSelect').value = 'all';
+            document.getElementById('periodSelect').value = 'daily';
+            document.getElementById('dateRangeTrigger').textContent = 'Today';
+            rangeStart = null;
+            rangeEnd = null;
+            renderCalendars();
+            // Show all products on reset
+            applyFilters();
+        });
+
+        // Apply Filters
+        document.getElementById('filterApply').addEventListener('click', function() {
+            applyFilters();
+        });
+
+        function applyFilters() {
+            const selectedProduct = document.getElementById('metricViewSelect').value;
+            const productRows = document.querySelectorAll('.product-row[data-product]');
+
+            productRows.forEach(function(row) {
+                const productId = row.getAttribute('data-product');
+                let showByMetricFilter = (selectedProduct === 'all') || (productId === selectedProduct);
+                let showByTab = (activeTab === 'all') || favorites.has(productId);
+
+                if (showByMetricFilter && showByTab) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update the count badge
+            const visibleRows = document.querySelectorAll('.product-row[data-product]:not([style*="display: none"])');
+            const countBadge = document.querySelector('.products-header .count');
+            if (countBadge) {
+                countBadge.textContent = visibleRows.length;
+            }
+        }
+
+        // Products Accordion Toggle
+        const productsToggle = document.getElementById('productsToggle');
+        const productsContent = document.getElementById('productsContent');
+        productsToggle.addEventListener('click', function() {
+            productsContent.classList.toggle('collapsed');
+            productsToggle.classList.toggle('collapsed');
+            if (productsContent.classList.contains('collapsed')) {
+                productsToggle.textContent = 'expand_more';
+            } else {
+                productsToggle.textContent = 'expand_less';
+            }
+        });
+
+        // Date Range Picker
+        const dateRangePicker = document.getElementById('dateRangePicker');
+        const dateRangeTrigger = document.getElementById('dateRangeTrigger');
+        const dateRangeArrow = document.getElementById('dateRangeArrow');
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
+        const leftMonthTitle = document.getElementById('leftMonthTitle');
+        const rightMonthTitle = document.getElementById('rightMonthTitle');
+        const leftCalDays = document.getElementById('leftCalDays');
+        const rightCalDays = document.getElementById('rightCalDays');
+        const drpCancel = document.getElementById('drpCancel');
+        const drpOk = document.getElementById('drpOk');
+
+        let currentLeftMonth = new Date(2025, 11, 1); // Dec 2025
+        let rangeStart = null;
+        let rangeEnd = null;
+
+        function toggleDatePicker() {
+            dateRangePicker.classList.toggle('open');
+        }
+        dateRangeTrigger.addEventListener('click', toggleDatePicker);
+        dateRangeArrow.addEventListener('click', toggleDatePicker);
+
+        drpCancel.addEventListener('click', function() {
+            dateRangePicker.classList.remove('open');
+        });
+
+        drpOk.addEventListener('click', function() {
+            if (rangeStart && rangeEnd) {
+                const opts = { month: 'short', day: 'numeric' };
+                const startStr = rangeStart.toLocaleDateString('en-US', opts);
+                const endStr = rangeEnd.toLocaleDateString('en-US', opts);
+                dateRangeTrigger.textContent = startStr + ' - ' + endStr;
+            }
+            dateRangePicker.classList.remove('open');
+        });
+
+        prevMonthBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            currentLeftMonth.setMonth(currentLeftMonth.getMonth() - 1);
+            renderCalendars();
+        });
+
+        nextMonthBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            currentLeftMonth.setMonth(currentLeftMonth.getMonth() + 1);
+            renderCalendars();
+        });
+
+        function getMonthName(date) {
+            return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+
+        function renderCalendars() {
+            const rightMonth = new Date(currentLeftMonth.getFullYear(), currentLeftMonth.getMonth() + 1, 1);
+            leftMonthTitle.textContent = getMonthName(currentLeftMonth);
+            rightMonthTitle.textContent = getMonthName(rightMonth);
+            renderMonth(leftCalDays, currentLeftMonth);
+            renderMonth(rightCalDays, rightMonth);
+        }
+
+        function renderMonth(container, monthDate) {
+            container.innerHTML = '';
+            const year = monthDate.getFullYear();
+            const month = monthDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            // Previous month days
+            const prevDays = new Date(year, month, 0).getDate();
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'drp-day other-month';
+                day.textContent = prevDays - i;
+                container.appendChild(day);
+            }
+
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const day = document.createElement('div');
+                day.className = 'drp-day';
+                day.textContent = d;
+                const thisDate = new Date(year, month, d);
+
+                if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === d) {
+                    day.classList.add('today');
+                }
+
+                if (rangeStart && rangeEnd) {
+                    if (thisDate.getTime() === rangeStart.getTime()) {
+                        day.classList.add('range-start');
+                    } else if (thisDate.getTime() === rangeEnd.getTime()) {
+                        day.classList.add('range-end');
+                    } else if (thisDate > rangeStart && thisDate < rangeEnd) {
+                        day.classList.add('in-range');
+                    }
+                } else if (rangeStart && thisDate.getTime() === rangeStart.getTime()) {
+                    day.classList.add('selected');
+                }
+
+                day.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!rangeStart || (rangeStart && rangeEnd)) {
+                        rangeStart = thisDate;
+                        rangeEnd = null;
+                    } else {
+                        if (thisDate < rangeStart) {
+                            rangeEnd = rangeStart;
+                            rangeStart = thisDate;
+                        } else {
+                            rangeEnd = thisDate;
+                        }
+                    }
+                    renderCalendars();
+                });
+
+                container.appendChild(day);
+            }
+
+            // Next month days
+            const totalCells = container.children.length;
+            const remaining = 42 - totalCells;
+            for (let i = 1; i <= remaining; i++) {
+                const day = document.createElement('div');
+                day.className = 'drp-day other-month';
+                day.textContent = i;
+                container.appendChild(day);
+            }
+        }
+
+        renderCalendars();
+
+        // Close date picker on outside click
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('dateRangePicker');
+            const trigger = document.getElementById('dateRangeTrigger');
+            const arrow = document.getElementById('dateRangeArrow');
+            if (!picker.contains(e.target) && e.target !== trigger && e.target !== arrow && !trigger.contains(e.target)) {
+                picker.classList.remove('open');
+            }
+        });
+
+        // Favorites Toggle
+        const favoritesList = document.getElementById('favoritesList');
+        const productNameMap = {
+            'budget-planner': 'Budget Planner',
+            'budget-tracker': 'Budget Tracker',
+            'finhome': 'FinHome',
+            'ai': 'AI',
+            'calendar': 'Calendar',
+            'constellation': 'Constellation',
+            'allocation': 'Allocation'
+        };
+
+        // Track initial favorites
+        let favorites = new Set(['allocation', 'constellation', 'finhome']);
+
+        // Set initial heart states
+        document.querySelectorAll('.product-row[data-product]').forEach(function(row) {
+            const productId = row.getAttribute('data-product');
+            const heartIcon = row.querySelector('.heart-icon');
+            if (favorites.has(productId)) {
+                heartIcon.textContent = 'favorite';
+                heartIcon.style.color = '#f44336';
+            } else {
+                heartIcon.textContent = 'favorite_border';
+                heartIcon.style.color = '#999';
+            }
+        });
+
+        // Heart click handler
+        document.querySelectorAll('.heart-icon').forEach(function(heart) {
+            heart.addEventListener('click', function() {
+                const row = this.closest('.product-row');
+                const productId = row.getAttribute('data-product');
+                const productName = productNameMap[productId] || productId;
+
+                if (favorites.has(productId)) {
+                    // Remove from favorites
+                    favorites.delete(productId);
+                    this.textContent = 'favorite_border';
+                    this.style.color = '#999';
+                    // Remove from sidebar
+                    const favItem = favoritesList.querySelector('[data-fav="' + productId + '"]');
+                    if (favItem) favItem.remove();
+                } else {
+                    // Add to favorites
+                    favorites.add(productId);
+                    this.textContent = 'favorite';
+                    this.style.color = '#f44336';
+                    // Add to sidebar
+                    const newItem = document.createElement('div');
+                    newItem.className = 'nav-sub-item';
+                    newItem.setAttribute('data-fav', productId);
+                    newItem.textContent = productName;
+                    favoritesList.appendChild(newItem);
+                }
+                // Re-apply tab filter after toggling favorite
+                applyTabFilter();
+            });
+        });
+
+        // Favorites / All Products Tab Switching
+        let activeTab = 'favorites';
+        const tabFavorites = document.getElementById('tabFavorites');
+        const tabAllProducts = document.getElementById('tabAllProducts');
+
+        tabFavorites.addEventListener('click', function() {
+            activeTab = 'favorites';
+            tabFavorites.classList.add('active');
+            tabAllProducts.classList.remove('active');
+            applyTabFilter();
+        });
+
+        tabAllProducts.addEventListener('click', function() {
+            activeTab = 'all';
+            tabAllProducts.classList.add('active');
+            tabFavorites.classList.remove('active');
+            applyTabFilter();
+        });
+
+        function applyTabFilter() {
+            const productRows = document.querySelectorAll('.product-row[data-product]');
+            let visibleCount = 0;
+
+            productRows.forEach(function(row) {
+                const productId = row.getAttribute('data-product');
+                if (activeTab === 'all') {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    // Show only favorites
+                    if (favorites.has(productId)) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+
+            // Update count badge
+            const countBadge = document.querySelector('.products-header .count');
+            if (countBadge) {
+                countBadge.textContent = visibleCount;
+            }
+        }
+
+        // Initial filter on load
+        applyTabFilter();
+
+        // ===== LIVE MARKET-STYLE TICKER =====
+        // Data model for all metrics
+        const liveData = {
+            activeUsers: 30234,
+            uniqueUsers: 30234,
+            totalHits: 30234,
+            products: {
+                'budget-planner': { metrics: [234, 512, 76.5], targets: [350, 800, 90], isPercent: [false, false, true] },
+                'budget-tracker': { metrics: [1245, 389, 62.3], targets: [2000, 600, 95], isPercent: [false, false, true] },
+                'finhome': { metrics: [234, -512, 76.5], targets: [350, 800, 90], isPercent: [false, false, true] },
+                'ai': { metrics: [78.2, 320, 1450], targets: [90, 200, 1200], isPercent: [true, false, false] },
+                'constellation': { metrics: [12.3, 8.5, 3], targets: [15, 10, 5], isPercent: [false, false, false] },
+                'calendar': { metrics: [12450, 890, 99.8], targets: [12000, 800, 99.5], isPercent: [false, false, true] }
+            }
+        };
+
+        function randomFluctuation(value, range) {
+            const change = (Math.random() - 0.5) * 2 * range;
+            return value + change;
+        }
+
+        function formatNumber(num) {
+            if (Math.abs(num) >= 1000) {
+                return Math.round(num).toLocaleString();
+            }
+            if (num % 1 !== 0) {
+                return num.toFixed(1);
+            }
+            return Math.round(num).toLocaleString();
+        }
+
+        function animateTick(element, isUp) {
+            element.classList.remove('tick-up', 'tick-down');
+            void element.offsetWidth; // force reflow
+            element.classList.add(isUp ? 'tick-up' : 'tick-down');
+        }
+
+        function updateTopStats() {
+            const prevActive = liveData.activeUsers;
+            const prevUnique = liveData.uniqueUsers;
+            const prevHits = liveData.totalHits;
+
+            liveData.activeUsers = Math.max(25000, randomFluctuation(liveData.activeUsers, 150));
+            liveData.uniqueUsers = Math.max(25000, randomFluctuation(liveData.uniqueUsers, 120));
+            liveData.totalHits = Math.max(25000, randomFluctuation(liveData.totalHits, 200));
+
+            const activeEl = document.getElementById('statActiveUsers');
+            const uniqueEl = document.getElementById('statUniqueUsers');
+            const hitsEl = document.getElementById('statTotalHits');
+
+            activeEl.textContent = Math.round(liveData.activeUsers).toLocaleString();
+            uniqueEl.textContent = Math.round(liveData.uniqueUsers).toLocaleString();
+            hitsEl.textContent = Math.round(liveData.totalHits).toLocaleString();
+
+            animateTick(activeEl, liveData.activeUsers > prevActive);
+            animateTick(uniqueEl, liveData.uniqueUsers > prevUnique);
+            animateTick(hitsEl, liveData.totalHits > prevHits);
+
+            // Update change percentages
+            const activeChange = ((liveData.activeUsers - 26900) / 26900 * 100).toFixed(1);
+            const uniqueChange = ((liveData.uniqueUsers - 26900) / 26900 * 100).toFixed(1);
+            const hitsChange = ((liveData.totalHits - 26900) / 26900 * 100).toFixed(1);
+
+            updateChangeEl('statActiveChange', activeChange);
+            updateChangeEl('statUniqueChange', uniqueChange);
+            updateChangeEl('statHitsChange', hitsChange);
+        }
+
+        function updateChangeEl(id, pct) {
+            const el = document.getElementById(id);
+            const num = parseFloat(pct);
+            if (num >= 0) {
+                el.textContent = '+' + pct + '% vs. previous BD';
+                el.className = 'stat-change up';
+            } else {
+                el.textContent = pct + '% vs. previous BD';
+                el.className = 'stat-change down';
+            }
+        }
+
+        function updateProductMetrics() {
+            document.querySelectorAll('.product-row[data-product]').forEach(function(row) {
+                const productId = row.getAttribute('data-product');
+                const productData = liveData.products[productId];
+                if (!productData) return;
+
+                const metricEls = row.querySelectorAll('.product-metric .pm-value');
+                metricEls.forEach(function(metricEl, i) {
+                    if (i >= productData.metrics.length) return;
+
+                    const prev = productData.metrics[i];
+                    const target = productData.targets[i];
+                    let range = Math.abs(target) * 0.02; // 2% fluctuation
+                    if (range < 1) range = 1;
+
+                    let newVal = randomFluctuation(prev, range);
+                    if (productData.isPercent[i]) {
+                        newVal = Math.max(0, Math.min(100, newVal));
+                    } else {
+                        newVal = Math.max(0, newVal);
+                    }
+                    productData.metrics[i] = newVal;
+
+                    const currentEl = metricEl.querySelector('.current');
+                    if (currentEl) {
+                        let displayVal;
+                        if (productData.isPercent[i]) {
+                            displayVal = newVal.toFixed(1) + '%';
+                        } else if (productId === 'constellation' && i < 2) {
+                            displayVal = newVal.toFixed(1) + ' min';
+                        } else if (productId === 'ai' && i === 1) {
+                            displayVal = Math.round(newVal) + 'ms';
+                        } else {
+                            displayVal = formatNumber(newVal);
+                        }
+                        currentEl.textContent = displayVal;
+
+                        // Color based on performance vs target
+                        const ratio = productId === 'ai' && i === 1 
+                            ? target / newVal  // lower is better for latency
+                            : newVal / target;
+
+                        if (ratio >= 0.7) {
+                            currentEl.style.color = '#4caf50';
+                        } else if (ratio >= 0.5) {
+                            currentEl.style.color = '#ffc107';
+                        } else {
+                            currentEl.style.color = '#f44336';
+                        }
+
+                        animateTick(currentEl, newVal > prev);
+                    }
+                });
+
+                // Determine overall product status color based on priority logic
+                updateProductStatusColor(row, productData);
+            });
+        }
+
+        function updateProductStatusColor(row, productData) {
+            let hasRed = false;
+            let hasYellow = false;
+
+            const metricEls = row.querySelectorAll('.product-metric .pm-value .current');
+            metricEls.forEach(function(el) {
+                const color = el.style.color;
+                if (color === 'rgb(244, 67, 54)' || color === '#f44336') {
+                    hasRed = true;
+                } else if (color === 'rgb(255, 193, 7)' || color === '#ffc107') {
+                    hasYellow = true;
+                }
+            });
+
+            // Determine overall status
+            let statusColor, statusClass, statusText, priority;
+            if (hasRed) {
+                statusColor = '#f44336';
+                statusClass = 'at-risk';
+                statusText = 'At Risk';
+                priority = 1;
+                row.className = row.className.replace(/row-(at-risk|watch|good)/g, '').trim() + ' row-at-risk';
+            } else if (hasYellow) {
+                statusColor = '#ffc107';
+                statusClass = 'watch';
+                statusText = 'On Watch';
+                priority = 2;
+                row.className = row.className.replace(/row-(at-risk|watch|good)/g, '').trim() + ' row-watch';
+            } else {
+                statusColor = '#4caf50';
+                statusClass = 'healthy';
+                statusText = 'Good';
+                priority = 3;
+                row.className = row.className.replace(/row-(at-risk|watch|good)/g, '').trim() + ' row-good';
+            }
+
+            // Store priority on the row for sorting
+            row.setAttribute('data-priority', priority);
+
+            // Calculate on-target score (count green metrics)
+            let greenCount = 0;
+            let totalMetrics = metricEls.length;
+            metricEls.forEach(function(el) {
+                const color = el.style.color;
+                if (color === 'rgb(76, 175, 80)' || color === '#4caf50') {
+                    greenCount++;
+                }
+            });
+
+            // Update the performance inline text
+            const perfInline = row.querySelector('.performance-inline');
+            if (perfInline) {
+                perfInline.innerHTML = '<strong style="color:' + statusColor + ';">' + greenCount + '</strong>/' + totalMetrics + ' on target';
+            }
+
+            // Update the badge
+            const badge = row.querySelector('.badge');
+            if (badge) {
+                badge.className = 'badge ' + statusClass;
+                badge.textContent = statusText;
+            }
+
+            // Update left border color in light mode
+            row.style.borderLeftColor = statusColor;
+        }
+
+        // Sort products by priority: red (1) > yellow (2) > green (3)
+        function sortProductsByPriority() {
+            const container = document.getElementById('productsContent');
+            const rows = Array.from(container.querySelectorAll('.product-row[data-product]'));
+
+            rows.sort(function(a, b) {
+                const priorityA = parseInt(a.getAttribute('data-priority') || 3);
+                const priorityB = parseInt(b.getAttribute('data-priority') || 3);
+                return priorityA - priorityB;
+            });
+
+            rows.forEach(function(row) {
+                container.appendChild(row);
+            });
+        }
+
+        // Run live updates every 1 second
+        setInterval(function() {
+            updateTopStats();
+            updateProductMetrics();
+            sortProductsByPriority();
+            updateDonutChart();
+        }, 1000);
+
+        // Update donut chart based on product status distribution
+        function updateDonutChart() {
+            const rows = document.querySelectorAll('.product-row[data-product]');
+            let redCount = 0, yellowCount = 0, greenCount = 0;
+            let total = rows.length;
+
+            rows.forEach(function(row) {
+                const priority = parseInt(row.getAttribute('data-priority') || 3);
+                if (priority === 1) redCount++;
+                else if (priority === 2) yellowCount++;
+                else greenCount++;
+            });
+
+            const circumference = 2 * Math.PI * 50; // ~314.16
+            const attentionCount = redCount + yellowCount;
+
+            // Only show red and yellow in the dial
+            let redPct, yellowPct;
+            redPct = redCount / total;
+            yellowPct = yellowCount / total;
+
+            // Arcs proportional to full dial (360° = 100%)
+            const redArc = redPct * circumference;
+            const yellowArc = yellowPct * circumference;
+
+            const donutRedEl = document.getElementById('donutRed');
+            const donutYellowEl = document.getElementById('donutYellow');
+
+            // Red segment starts at 0
+            donutRedEl.setAttribute('stroke-dasharray', redArc + ' ' + (circumference - redArc));
+            donutRedEl.setAttribute('stroke-dashoffset', '0');
+
+            // Yellow segment starts after red
+            donutYellowEl.setAttribute('stroke-dasharray', yellowArc + ' ' + (circumference - yellowArc));
+            donutYellowEl.setAttribute('stroke-dashoffset', -redArc);
+
+            // Remove green segment if it exists
+            let donutGreenEl = document.getElementById('donutGreen');
+            if (donutGreenEl) {
+                donutGreenEl.setAttribute('stroke-dasharray', '0 ' + circumference);
+            }
+
+            // Update center number (count of problematic products)
+            document.querySelector('.donut-center').textContent = attentionCount;
+
+            // Percentages based on full dial (360° = 100%)
+            // Store in global-scoped variables so hover always reads latest
+            window._donutRedPct = ((redCount / total) * 100).toFixed(1);
+            window._donutYellowPct = ((yellowCount / total) * 100).toFixed(1);
+        }
+
+        // Set up donut hover handlers once (read from window variables)
+        const donutRedEl = document.getElementById('donutRed');
+        const donutYellowEl = document.getElementById('donutYellow');
+
+        donutRedEl.addEventListener('mouseenter', function() {
+            donutTooltip.textContent = window._donutRedPct + '%';
+            donutTooltip.classList.add('visible');
+        });
+        donutRedEl.addEventListener('mousemove', function(e) {
+            donutTooltip.textContent = window._donutRedPct + '%';
+            donutTooltip.style.left = (e.clientX + 12) + 'px';
+            donutTooltip.style.top = (e.clientY - 28) + 'px';
+        });
+        donutRedEl.addEventListener('mouseleave', function() {
+            donutTooltip.classList.remove('visible');
+        });
+
+        donutYellowEl.addEventListener('mouseenter', function() {
+            donutTooltip.textContent = window._donutYellowPct + '%';
+            donutTooltip.classList.add('visible');
+        });
+        donutYellowEl.addEventListener('mousemove', function(e) {
+            donutTooltip.textContent = window._donutYellowPct + '%';
+            donutTooltip.style.left = (e.clientX + 12) + 'px';
+            donutTooltip.style.top = (e.clientY - 28) + 'px';
+        });
+        donutYellowEl.addEventListener('mouseleave', function() {
+            donutTooltip.classList.remove('visible');
+        });
+
+        // Initial donut update
+        updateDonutChart();
+
+        // Wire up "View Details" links to category pages
+        const detailLinks = {
+            'energy': '/dashboard/energy.html',
+            'grocery': '/dashboard/grocery.html',
+            'cleaning': '/dashboard/cleaning.html',
+            'security': '/dashboard/security.html',
+            'smart-devices': '/dashboard/smart-devices.html'
+        };
+        document.querySelectorAll('.product-row').forEach(row => {
+            const product = row.getAttribute('data-product');
+            if (detailLinks[product]) {
+                const viewBtn = row.querySelector('.view-details');
+                if (viewBtn) {
+                    viewBtn.style.cursor = 'pointer';
+                    viewBtn.addEventListener('click', () => {
+                        window.location.href = detailLinks[product];
+                    });
+                }
+            }
+        });
+
+        // Auto-sort product rows by severity: red (at-risk) → orange (watch) → green (good)
+        function sortProductRows() {
+            const container = document.getElementById('productsContent');
+            if (!container) return;
+            
+            const rows = Array.from(container.querySelectorAll('.product-row'));
+            const priority = { 'row-at-risk': 0, 'row-watch': 1, 'row-good': 2 };
+            
+            rows.sort((a, b) => {
+                const aP = a.classList.contains('row-at-risk') ? 0 : a.classList.contains('row-watch') ? 1 : 2;
+                const bP = b.classList.contains('row-at-risk') ? 0 : b.classList.contains('row-watch') ? 1 : 2;
+                return aP - bP;
+            });
+            
+            rows.forEach(row => container.appendChild(row));
+        }
+        
+        sortProductRows();
+
+    </script>
+</body>
+</html>

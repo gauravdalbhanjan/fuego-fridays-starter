@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Devices - HomePulse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background: #f5f5f5; display: flex; min-height: 100vh; }
+        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 48px; background: #1a2332; display: flex; align-items: center; padding: 0 16px; z-index: 100; color: #fff; }
+        .app-bar a { color: #fff; text-decoration: none; display: flex; align-items: center; }
+        .app-bar .app-title { font-size: 16px; font-weight: 500; margin-left: 12px; }
+        .sidebar { width: 180px; background: #1e2a3a; color: #fff; padding-top: 48px; height: 100vh; position: fixed; left: 0; top: 0; overflow-y: auto; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header span { font-weight: 500; font-size: 14px; }
+        .sidebar-nav { flex: 1; padding: 8px 0; }
+        .nav-item { display: flex; align-items: center; padding: 10px 16px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.7); transition: background 0.2s; text-decoration: none; }
+        .nav-item:hover { background: rgba(255,255,255,0.08); }
+        .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+        .nav-item .material-icons { font-size: 20px; margin-right: 12px; }
+        .nav-section-header { display: flex; align-items: center; padding: 10px 16px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.9); }
+        .nav-section-header .material-icons { font-size: 20px; margin-right: 12px; }
+        .nav-section-header .expand { margin-left: auto; font-size: 18px; }
+        .nav-sub-item { display: block; padding: 8px 16px 8px 48px; font-size: 13px; color: rgba(255,255,255,0.6); cursor: pointer; transition: background 0.2s; text-decoration: none; }
+        .nav-sub-item:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
+        .nav-sub-item.active { color: #fff; background: rgba(255,255,255,0.12); }
+        .sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .content { margin-left: 180px; margin-top: 48px; padding: 24px; flex: 1; max-width: 1200px; }
+        .back-link { display: inline-flex; align-items: center; gap: 4px; color: #1a73e8; font-size: 13px; margin-bottom: 20px; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+        .page-title { font-size: 24px; font-weight: 700; color: #1a2332; margin-bottom: 8px; }
+        .page-subtitle { font-size: 14px; color: #666; margin-bottom: 24px; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .metric-card { background: #fff; border-radius: 12px; padding: 20px; border-left: 4px solid #4caf50; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .metric-card.warning { border-left-color: #ff9800; }
+        .metric-card.critical { border-left-color: #f44336; }
+        .metric-card .label { font-size: 12px; color: #888; text-transform: uppercase; }
+        .metric-card .value { font-size: 28px; font-weight: 700; color: #1a2332; margin-top: 4px; }
+        .metric-card .change { font-size: 12px; margin-top: 4px; }
+        .change.positive { color: #4caf50; }
+        .change.negative { color: #f44336; }
+        .change.neutral { color: #ff9800; }
+        .section { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .section h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .section h2 .material-icons { font-size: 20px; color: #1a73e8; }
+        .device-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+        .device-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #e8ecf0; border-radius: 8px; background: #f8f9fa; }
+        .device-item .device-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #e3f2fd; color: #1a73e8; }
+        .device-item .device-info { flex: 1; }
+        .device-item .device-name { font-size: 13px; font-weight: 500; color: #1a2332; }
+        .device-item .device-status { font-size: 11px; color: #666; }
+        .device-item .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .device-item .status-dot.online { background: #4caf50; }
+        .device-item .status-dot.update { background: #ff9800; }
+        .device-item .status-dot.offline { background: #f44336; }
+        .action-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .action-item:last-child { border-bottom: none; }
+        .action-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .action-icon.green { background: #e8f5e9; color: #4caf50; }
+        .action-icon.orange { background: #fff3e0; color: #ff9800; }
+        .action-icon.blue { background: #e3f2fd; color: #1a73e8; }
+        .action-title { font-size: 14px; font-weight: 500; color: #1a2332; }
+        .action-desc { font-size: 12px; color: #666; margin-top: 2px; }
+        .threshold-box { background: #fff8e1; border: 1px solid #ffecb3; border-radius: 8px; padding: 16px; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+        .threshold-box .material-icons { color: #ff9800; }
+        .threshold-box p { font-size: 13px; color: #5d4037; }
+        .pattern-item { padding: 8px 0; font-size: 13px; color: #444; border-bottom: 1px solid #f5f5f5; }
+        .pattern-item:last-child { border-bottom: none; }
+        .pattern-item strong { color: #1a2332; }
+        body.dark-mode { background: #0d1b2a; }
+        body.dark-mode .sidebar { background: #0f1c2e; }
+        body.dark-mode .content { background: #0d1b2a; }
+        body.dark-mode .page-title { color: #fff; }
+        body.dark-mode .page-subtitle { color: rgba(255,255,255,0.6); }
+        body.dark-mode .metric-card { background: #132238; }
+        body.dark-mode .metric-card .label { color: rgba(255,255,255,0.5); }
+        body.dark-mode .metric-card .value { color: #fff; }
+        body.dark-mode .section { background: #132238; }
+        body.dark-mode .section h2 { color: #fff; }
+        body.dark-mode .device-item { background: #0d1b2a; border-color: #1e3a5f; }
+        body.dark-mode .device-item .device-name { color: #fff; }
+        body.dark-mode .device-item .device-status { color: rgba(255,255,255,0.5); }
+        body.dark-mode .action-title { color: #fff; }
+        body.dark-mode .action-desc { color: rgba(255,255,255,0.5); }
+        body.dark-mode .action-item { border-bottom-color: #1e3a5f; }
+        body.dark-mode .pattern-item { color: rgba(255,255,255,0.7); border-bottom-color: #1e3a5f; }
+        body.dark-mode .pattern-item strong { color: #fff; }
+        body.dark-mode .threshold-box { background: #1a1400; border-color: #3d2a0a; }
+        body.dark-mode .threshold-box p { color: #ffcc80; }
+        body.dark-mode .back-link { color: #64b5f6; }
+    </style>
+</head>
+<body>
+    <div class="app-bar">
+        <a href="/dashboard/index.html"><span class="material-icons">apps</span></a>
+        <span class="app-title">HomePulse</span>
+    </div>
+
+    <div class="sidebar">
+        <div class="sidebar-header"><span>HomePulse</span></div>
+        <div class="sidebar-nav">
+            <a href="/dashboard/index.html" class="nav-item"><span class="material-icons">dashboard</span> Dashboard</a>
+            <div class="nav-section-header"><span class="material-icons">apps</span> Categories<span class="material-icons expand">expand_less</span></div>
+            <a href="/dashboard/energy.html" class="nav-sub-item">Energy & Utilities</a>
+            <a href="/dashboard/grocery.html" class="nav-sub-item">Grocery & Food</a>
+            <a href="/dashboard/cleaning.html" class="nav-sub-item">Cleaning Supplies</a>
+            <a href="/dashboard/security.html" class="nav-sub-item">Security & Cameras</a>
+            <a href="/dashboard/smart-devices.html" class="nav-sub-item active">Smart Devices</a>
+        </div>
+        <div class="sidebar-footer"><div class="nav-item"><span class="material-icons">settings</span> Settings</div></div>
+    </div>
+
+    <div class="content">
+        <a href="/dashboard/index.html" class="back-link"><span class="material-icons" style="font-size:16px">arrow_back</span> Back to Dashboard</a>
+
+        <h1 class="page-title">Smart Devices</h1>
+        <p class="page-subtitle">Manage connected devices, firmware updates, and home automation across your network</p>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="label">Devices Connected</div>
+                <div class="value">18</div>
+                <div class="change positive">All on network</div>
+            </div>
+            <div class="metric-card warning">
+                <div class="label">Firmware Updates</div>
+                <div class="value">2</div>
+                <div class="change neutral">Pending installation</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Network Uptime</div>
+                <div class="value">99.9%</div>
+                <div class="change positive">Last 30 days</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Automations Active</div>
+                <div class="value">12</div>
+                <div class="change positive">3 triggered today</div>
+            </div>
+        </div>
+        <!-- Device List -->
+        <div class="section">
+            <h2><span class="material-icons">devices</span> Device Status (18 Devices)</h2>
+            <div class="device-list">
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">thermostat</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Nest Thermostat</div>
+                        <div class="device-status">Living Room • 72°F set</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">lightbulb</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Hue Lights (x6)</div>
+                        <div class="device-status">All zones • 4 active</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">speaker</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Echo Dot (x3)</div>
+                        <div class="device-status">Kitchen, Bedroom, Office</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">lock</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Smart Lock - Front</div>
+                        <div class="device-status">Locked • Battery 78%</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">lock</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Smart Lock - Garage</div>
+                        <div class="device-status">Locked • Firmware update</div>
+                    </div>
+                    <div class="status-dot update"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">router</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Mesh Router (x2)</div>
+                        <div class="device-status">Main + Extension node</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">tv</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Smart TV - Living Room</div>
+                        <div class="device-status">Standby • Firmware update</div>
+                    </div>
+                    <div class="status-dot update"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">local_laundry_service</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Smart Washer</div>
+                        <div class="device-status">Idle • Last run 6h ago</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">kitchen</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Smart Fridge</div>
+                        <div class="device-status">Running • 37°F</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+                <div class="device-item">
+                    <div class="device-icon"><span class="material-icons">water_drop</span></div>
+                    <div class="device-info">
+                        <div class="device-name">Sprinkler Controller</div>
+                        <div class="device-status">Next run: 6 AM tomorrow</div>
+                    </div>
+                    <div class="status-dot online"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patterns -->
+        <div class="section">
+            <h2><span class="material-icons">insights</span> Device Patterns</h2>
+            <div class="pattern-item"><strong>Most Active Devices:</strong> Thermostat (142 adjustments/month), Hue Lights (89 toggles/day), Echo (34 commands/day)</div>
+            <div class="pattern-item"><strong>Network Bandwidth:</strong> Smart TV uses 68% of bandwidth, followed by security cameras (22%), all other devices (10%)</div>
+            <div class="pattern-item"><strong>Automation Triggers:</strong> "Good Morning" routine (6:30 AM), "Away Mode" (8:15 AM), "Welcome Home" (5:45 PM)</div>
+            <div class="pattern-item"><strong>Device Health:</strong> Smart Lock garage battery declining faster than expected (replace in ~2 weeks)</div>
+            <div class="pattern-item"><strong>Peak Load:</strong> 6–8 PM when streaming + cooking + lighting all active simultaneously</div>
+        </div>
+        <!-- Plan of Action -->
+        <div class="section">
+            <h2><span class="material-icons">assignment</span> Plan of Action</h2>
+            <div class="action-item">
+                <div class="action-icon orange"><span class="material-icons">system_update</span></div>
+                <div>
+                    <div class="action-title">Update firmware on 2 devices</div>
+                    <div class="action-desc">Smart Lock (Garage) and Smart TV have pending security patches. Schedule for tonight at 2 AM to avoid disruption</div>
+                </div>
+            </div>
+            <div class="action-item">
+                <div class="action-icon blue"><span class="material-icons">wifi</span></div>
+                <div>
+                    <div class="action-title">Optimize mesh network placement</div>
+                    <div class="action-desc">Move extension node 3ft closer to garage for better smart lock connection. Current signal: -72dBm (weak)</div>
+                </div>
+            </div>
+            <div class="action-item">
+                <div class="action-icon green"><span class="material-icons">auto_awesome</span></div>
+                <div>
+                    <div class="action-title">Add "Movie Night" routine automation</div>
+                    <div class="action-desc">Dim lights to 20%, close blinds, set TV to streaming input, adjust thermostat. Trigger via voice or app</div>
+                </div>
+            </div>
+            <div class="action-item">
+                <div class="action-icon orange"><span class="material-icons">battery_alert</span></div>
+                <div>
+                    <div class="action-title">Replace garage smart lock battery</div>
+                    <div class="action-desc">Battery at 23% and declining. Order CR123A backup now to avoid lockout. Est. 2 weeks remaining</div>
+                </div>
+            </div>
+
+            <div class="threshold-box">
+                <span class="material-icons">notifications_active</span>
+                <p><strong>Auto-Action Threshold:</strong> If any device goes offline for more than 5 minutes, HomePulse will automatically attempt a restart via the smart plug. If restart fails, you'll receive an immediate phone notification.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

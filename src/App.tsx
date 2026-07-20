@@ -193,7 +193,7 @@ export default function App() {
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       {showAutoNotification && (
         <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-full bg-[#31a8ff] px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#31a8ff]/30">
+          <div className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white shadow-lg shadow-[#31a8ff]/30">
             <Zap className="h-4 w-4" />
             Auto-added: {autoAddedItems.join(", ")}
           </div>
@@ -202,17 +202,17 @@ export default function App() {
 
       {/* Header — Alexa style minimal */}
       <header className="flex items-center justify-between px-5 py-4">
-        <button onClick={() => setShowSettings(true)} className="rounded-full bg-[#161b22] p-2.5 text-[#8b949e] hover:text-white transition-colors">
+        <button onClick={() => setShowSettings(true)} className="rounded-full bg-card p-2.5 text-muted-foreground hover:text-white transition-colors">
           <Settings className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-[#31a8ff] animate-pulse shadow-[0_0_8px_#31a8ff]" />
+          <div className="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#31a8ff]" />
           <h1 className="font-display text-base font-semibold tracking-tight">PantryPilot</h1>
         </div>
-        <button onClick={() => setShowCart(true)} className="relative rounded-full bg-[#161b22] p-2.5 text-[#8b949e] hover:text-white transition-colors" aria-label="Cart">
+        <button onClick={() => setShowCart(true)} className="relative rounded-full bg-card p-2.5 text-muted-foreground hover:text-white transition-colors" aria-label="Cart">
           <ShoppingCart className="h-5 w-5" />
           {cartCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#31a8ff] text-[10px] font-bold text-white shadow-[0_0_6px_#31a8ff]">{cartCount}</span>
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-[0_0_6px_#31a8ff]">{cartCount}</span>
           )}
         </button>
       </header>
@@ -229,7 +229,7 @@ export default function App() {
       <SousChefChat lowStockCount={items.filter((i) => i.urgency === "critical").length} robinSleepTimeout={preferences.robinSleepTimeout} robinVoiceEnabled={preferences.robinVoiceEnabled} voiceKey={preferences.voiceActivationKey} />
 
       {/* Bottom nav — Alexa device style */}
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-[#30363d]/50 bg-[#0d1117]/95 px-4 py-2 backdrop-blur-xl">
+      <nav className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/95 px-4 py-2 backdrop-blur-xl">
         <div className="mx-auto flex max-w-md justify-around">
           {([
             { id: "menu" as NavTab, icon: "⊞", label: "Menu" },
@@ -239,13 +239,18 @@ export default function App() {
           ]).map((tab) => (
             <button key={tab.id} onClick={() => setActiveNav(tab.id)}
               className={cn("flex flex-col items-center gap-1 rounded-2xl px-4 py-2 text-xs transition-all",
-                activeNav === tab.id ? "bg-[#31a8ff]/10 text-[#31a8ff]" : "text-[#8b949e] hover:text-[#e6edf3]"
+                activeNav === tab.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
               )}>
               <span className="text-lg">{tab.icon}</span>
-              <span className={cn("font-medium", activeNav === tab.id && "text-[#31a8ff]")}>{tab.label}</span>
-              {activeNav === tab.id && <span className="absolute bottom-1 h-0.5 w-6 rounded-full bg-[#31a8ff] shadow-[0_0_4px_#31a8ff]" />}
+              <span className={cn("font-medium", activeNav === tab.id && "text-primary")}>{tab.label}</span>
+              {activeNav === tab.id && <span className="absolute bottom-1 h-0.5 w-6 rounded-full bg-primary shadow-[0_0_4px_#31a8ff]" />}
             </button>
           ))}
+          {/* HomePulse button */}
+          <a href="/dashboard/index.html" className="flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-all">
+            <img src="/homepulse-icon.png" alt="HomePulse" className="h-6 w-6 rounded-full object-cover" />
+            <span className="font-medium">HomePulse</span>
+          </a>
         </div>
       </nav>
     </div>
@@ -267,21 +272,21 @@ function MenuPage({ items, availableItemNames }: { items: GroceryItem[]; availab
   return (
     <div className="space-y-5">
       {/* Alexa-style greeting with glow */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#161b22] to-[#0d1117] p-6 border border-[#30363d]/50">
-        <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-[#31a8ff]/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl bg-card p-6 border border-border">
+        <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
         <div className="relative">
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#31a8ff]/20 shadow-[0_0_12px_#31a8ff40]">
-              <Mic className="h-5 w-5 text-[#31a8ff]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 shadow-[0_0_12px_#31a8ff40]">
+              <Mic className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-[#8b949e]">{greeting}</p>
+              <p className="text-xs text-muted-foreground">{greeting}</p>
               <p className="text-lg font-semibold">{now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</p>
             </div>
           </div>
           {lowItems.length > 0 && (
-            <p className="text-sm text-[#8b949e]">
-              <span className="text-[#31a8ff]">{lowItems.length} items</span> running low — I can help restock.
+            <p className="text-sm text-muted-foreground">
+              <span className="text-primary">{lowItems.length} items</span> running low — I can help restock.
             </p>
           )}
         </div>
@@ -289,24 +294,24 @@ function MenuPage({ items, availableItemNames }: { items: GroceryItem[]; availab
 
       {/* Quick actions row */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-3 text-center">
-          <p className="text-lg font-bold text-[#31a8ff]">{dishesWithMatch.filter(d => d.pantryMatch >= 80).length}</p>
-          <p className="text-[10px] text-[#8b949e]">Ready to Cook</p>
+        <div className="rounded-2xl bg-card border border-border/50 p-3 text-center">
+          <p className="text-lg font-bold text-primary">{dishesWithMatch.filter(d => d.pantryMatch >= 80).length}</p>
+          <p className="text-[10px] text-muted-foreground">Ready to Cook</p>
         </div>
-        <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-3 text-center">
+        <div className="rounded-2xl bg-card border border-border/50 p-3 text-center">
           <p className="text-lg font-bold text-[#58d1ff]">{items.length}</p>
-          <p className="text-[10px] text-[#8b949e]">Pantry Items</p>
+          <p className="text-[10px] text-muted-foreground">Pantry Items</p>
         </div>
-        <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-3 text-center">
+        <div className="rounded-2xl bg-card border border-border/50 p-3 text-center">
           <p className="text-lg font-bold text-[#f0883e]">{lowItems.length}</p>
-          <p className="text-[10px] text-[#8b949e]">Low Stock</p>
+          <p className="text-[10px] text-muted-foreground">Low Stock</p>
         </div>
       </div>
 
       {/* Dish cards */}
       <div>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Suggested Dishes</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suggested Dishes</h3>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" style={{ gridAutoRows: "350px" }}>
           {dishesWithMatch.slice(0, 8).map((dish) => (
             <DishCard key={dish.id} dish={dish} />
           ))}
@@ -321,26 +326,21 @@ function DishCard({ dish }: { dish: Dish & { pantryMatch: number } }) {
   const isImagePath = dish.image.startsWith("/");
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#161b22] border border-[#30363d]/50 transition-transform hover:scale-[1.02] active:scale-[0.98]">
-      <div className="h-[350px] w-full overflow-hidden bg-[#21262d]">
+    <div className="relative overflow-hidden rounded-2xl bg-card border border-border transition-transform hover:scale-[1.01] active:scale-[0.99] h-[350px]">
+      <div className="absolute inset-0 overflow-hidden bg-muted">
         {isImagePath ? (
           <img src={dish.image} alt={dish.name} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center text-6xl">{dish.image}</div>
         )}
       </div>
-      <div className="p-3">
-        <p className="text-sm font-medium leading-tight">{dish.name}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", matchColor)}>
-            {dish.pantryMatch}%
-          </span>
-          <span className="rounded-full bg-[#21262d] px-2 py-0.5 text-[10px] text-[#8b949e]">
-            {dish.cookTime}m
-          </span>
-          <span className="rounded-full bg-[#21262d] px-2 py-0.5 text-[10px] text-[#8b949e]">
-            {dish.calories}kcal
-          </span>
+      {/* Overlay info at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-12">
+        <p className="text-base font-semibold text-white">{dish.name}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className={cn("rounded-full px-2.5 py-1 text-xs font-bold", matchColor)}>{dish.pantryMatch}%</span>
+          <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs text-white">{dish.cookTime}m</span>
+          <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs text-white">{dish.calories}kcal</span>
         </div>
       </div>
     </div>
@@ -361,7 +361,7 @@ function InventoryPage({ items, allItems, activeCategory, onCategoryChange, onAd
             return (
               <button key={cat} onClick={() => onCategoryChange(cat)}
                 className={cn("relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all",
-                  activeCategory === cat ? "bg-[#31a8ff]/15 text-[#31a8ff] border border-[#31a8ff]/30" : "bg-[#161b22] text-[#8b949e] border border-[#30363d]/50 hover:text-[#e6edf3]"
+                  activeCategory === cat ? "bg-primary/15 text-primary border border-primary/30" : "bg-card text-muted-foreground border border-border/50 hover:text-foreground"
                 )}>
                 {cat}
                 {criticalCount > 0 && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#f0883e] shadow-[0_0_4px_#f0883e]" />}
@@ -370,7 +370,7 @@ function InventoryPage({ items, allItems, activeCategory, onCategoryChange, onAd
           })}
         </div>
       </nav>
-      <div className="space-y-2 rounded-3xl bg-[#161b22]/60 border border-[#30363d]/30 p-3">
+      <div className="space-y-2 rounded-3xl bg-card/60 border border-border/30 p-3">
         {items.map((item) => <ItemRow key={item.id} item={item} onAddToCart={onAddToCart} onToggleAutoReorder={onToggleAutoReorder} />)}
       </div>
     </div>
@@ -381,24 +381,24 @@ function ItemRow({ item, onAddToCart, onToggleAutoReorder }: { item: GroceryItem
   const isUrgent = item.urgency === "critical";
   return (
     <div className={cn("flex items-center gap-3 rounded-2xl px-3 py-3 transition-all", isUrgent && "bg-[#f0883e]/5 border border-[#f0883e]/20")}>
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#21262d] overflow-hidden text-2xl">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted overflow-hidden text-2xl">
         {item.image.startsWith("/") ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : item.image}
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium">{item.name}</span>
-        <div className="flex items-center gap-3 text-[11px] text-[#8b949e]">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           {item.dishesUsedIn > 0 && <span>🍽 {item.dishesUsedIn} Dishes</span>}
           <span className={cn(isUrgent && "text-[#f0883e] font-medium")}>⏳ {item.daysUntilOutLabel}</span>
         </div>
       </div>
       <button onClick={() => onToggleAutoReorder(item.id)}
-        className={cn("rounded-full p-1.5 transition-colors", item.autoReorder ? "bg-[#31a8ff]/20 text-[#31a8ff]" : "text-[#484f58] hover:text-[#8b949e]")}
+        className={cn("rounded-full p-1.5 transition-colors", item.autoReorder ? "bg-primary/20 text-primary" : "text-[#484f58] hover:text-muted-foreground")}
         aria-label={`Toggle auto-reorder for ${item.name}`}>
         <Zap className="h-3.5 w-3.5" />
       </button>
       <button onClick={() => onAddToCart(item.id)} disabled={item.inCart}
         className={cn("flex items-center gap-1 rounded-xl px-3 py-1.5 text-[11px] font-medium transition-all",
-          item.inCart ? "bg-[#3fb950]/15 text-[#3fb950]" : isUrgent ? "bg-[#f0883e] text-white hover:bg-[#f0883e]/80" : "bg-[#21262d] text-[#8b949e] hover:bg-[#30363d] hover:text-white"
+          item.inCart ? "bg-[#3fb950]/15 text-[#3fb950]" : isUrgent ? "bg-[#f0883e] text-white hover:bg-[#f0883e]/80" : "bg-muted text-muted-foreground hover:bg-[#30363d] hover:text-white"
         )}>
         {item.inCart ? <><Check className="h-3 w-3" /> Added</> : <><ShoppingCart className="h-3 w-3" /> Add</>}
       </button>
@@ -412,7 +412,7 @@ function RoutinePage({ routines, onUpdate, onAdd }: { routines: MealRoutine[]; o
     <div className="space-y-4">
       {routines.map((routine) => <RoutineCard key={routine.id} routine={routine} onUpdate={onUpdate} />)}
       <div className="flex justify-end">
-        <button onClick={onAdd} className="flex items-center gap-2 rounded-full bg-[#161b22] border border-[#30363d]/50 px-4 py-2.5 text-sm font-medium text-[#8b949e] hover:text-white hover:border-[#31a8ff]/30">
+        <button onClick={onAdd} className="flex items-center gap-2 rounded-full bg-card border border-border/50 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-white hover:border-primary/30">
           <Plus className="h-4 w-4" /> Add Meal
         </button>
       </div>
@@ -428,57 +428,34 @@ function RoutineCard({ routine, onUpdate }: { routine: MealRoutine; onUpdate: (i
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-[#30363d]/50" style={{ height: "calc(100vh - 220px)", minHeight: "360px" }}>
-      {/* Background image or gradient */}
+    <div className="relative overflow-hidden rounded-3xl" style={{ height: "200px" }}>
+      {/* Full-bleed background image */}
       {routine.image ? (
-        <>
-          <img src={routine.image} alt={routine.mealType} className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-black/50" />
-        </>
+        <img src={routine.image} alt={routine.mealType} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#161b22] to-[#0d1117]" />
+        <div className="absolute inset-0" style={{ background: routine.gradient }} />
       )}
-      <div className="absolute top-0 right-0 h-48 w-48 rounded-full bg-[#31a8ff]/8 blur-3xl" />
-      <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-[#31a8ff]/5 blur-2xl" />
+      {/* Subtle dark overlay for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-      <div className="relative flex h-full flex-col justify-between p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-medium text-[#31a8ff]">{routine.mealType}</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{routine.startTime} - {routine.endTime}</p>
-            {routine.calorieTarget && <p className="mt-2 text-sm text-[#8b949e]">🎯 {routine.calorieTarget} kcal target</p>}
-          </div>
-          <span className="text-5xl">{routine.emoji}</span>
-        </div>
+      {/* Content — positioned at bottom */}
+      <div className="relative flex h-full flex-col justify-end p-5">
+        <p className="text-sm font-medium text-white/80">{routine.mealType}</p>
+        <p className="text-3xl font-bold text-white tracking-tight">{routine.startTime} - {routine.endTime}</p>
 
-        <div className="space-y-3">
-          {routine.notes && (
-            <div className="rounded-2xl bg-[#21262d]/80 border border-[#30363d]/50 px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs text-[#8b949e]">Your habit</p>
-              <p className="mt-0.5 text-sm">{routine.notes}</p>
-            </div>
-          )}
-          <div className="flex items-center gap-2 rounded-2xl bg-[#31a8ff]/5 border border-[#31a8ff]/20 px-4 py-3">
-            <div className="h-2 w-2 rounded-full bg-[#31a8ff] shadow-[0_0_6px_#31a8ff] animate-pulse" />
-            <p className="text-xs text-[#8b949e]">Alexa auto-orders ingredients for this meal</p>
-            <span className="ml-auto text-[10px] font-medium text-[#3fb950]">Active</span>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex justify-center gap-2">
+        {/* Day selector + Edit Plan */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex gap-1.5">
             {DAY_LABELS.map((day, idx) => (
               <button key={idx} onClick={() => toggleDay(idx)}
-                className={cn("flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold transition-all",
-                  routine.activeDays[idx] ? "bg-[#31a8ff] text-white shadow-[0_0_10px_#31a8ff50]" : "bg-[#21262d] text-[#8b949e] hover:bg-[#30363d]"
+                className={cn("flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all",
+                  routine.activeDays[idx] ? "bg-white text-black" : "bg-white/20 text-white/60"
                 )}>{day}</button>
             ))}
           </div>
-          <div className="flex justify-end">
-            <button className="flex items-center gap-2 rounded-full bg-[#21262d] border border-[#30363d]/50 px-4 py-2 text-sm font-medium text-[#8b949e] hover:text-white hover:border-[#31a8ff]/30">
-              <Edit3 className="h-3.5 w-3.5" /> Edit Plan
-            </button>
-          </div>
+          <button className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-white/25">
+            <Edit3 className="h-3 w-3" /> Edit Plan
+          </button>
         </div>
       </div>
     </div>
@@ -496,44 +473,44 @@ function AlexaPage({ connection, rules, onToggleRule, onUpdateConnection, onTrig
   return (
     <div className="space-y-4">
       {/* Connection card with Alexa ring glow */}
-      <div className="relative overflow-hidden rounded-3xl bg-[#161b22] border border-[#30363d]/50 p-6">
-        <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-[#31a8ff]/15 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl bg-card border border-border/50 p-6">
+        <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative flex items-center gap-4">
-          <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#0d1117] border-2 border-[#31a8ff] shadow-[0_0_20px_#31a8ff40]">
-            <Mic className="h-6 w-6 text-[#31a8ff]" />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-background border-2 border-primary shadow-[0_0_20px_#31a8ff40]">
+            <Mic className="h-6 w-6 text-primary" />
             <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[#3fb950] border-2 border-[#161b22]" />
           </div>
           <div className="flex-1">
             <p className="font-semibold">Alexa + Amazon Fresh</p>
-            <p className="text-sm text-[#8b949e]">{connection.accountName} · Connected</p>
+            <p className="text-sm text-muted-foreground">{connection.accountName} · Connected</p>
           </div>
         </div>
 
         <div className="relative mt-5 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl bg-[#0d1117] border border-[#30363d]/50 p-3 text-center">
-            <p className="text-xl font-bold text-[#31a8ff]">{enabledRules.length}</p>
-            <p className="text-[10px] text-[#8b949e]">Auto Items</p>
+          <div className="rounded-2xl bg-background border border-border/50 p-3 text-center">
+            <p className="text-xl font-bold text-primary">{enabledRules.length}</p>
+            <p className="text-[10px] text-muted-foreground">Auto Items</p>
           </div>
-          <div className="rounded-2xl bg-[#0d1117] border border-[#30363d]/50 p-3 text-center">
+          <div className="rounded-2xl bg-background border border-border/50 p-3 text-center">
             <p className="text-xl font-bold text-[#f0883e]">{dueItems.length}</p>
-            <p className="text-[10px] text-[#8b949e]">Due Today</p>
+            <p className="text-[10px] text-muted-foreground">Due Today</p>
           </div>
-          <div className="rounded-2xl bg-[#0d1117] border border-[#30363d]/50 p-3 text-center">
+          <div className="rounded-2xl bg-background border border-border/50 p-3 text-center">
             <p className="text-xl font-bold text-[#3fb950]">${connection.orderHistory.slice(0, 4).reduce((s, o) => s + o.total, 0).toFixed(0)}</p>
-            <p className="text-[10px] text-[#8b949e]">This Month</p>
+            <p className="text-[10px] text-muted-foreground">This Month</p>
           </div>
         </div>
 
         <div className="relative mt-4 flex gap-2">
           <button onClick={() => onUpdateConnection({ voiceOrderingEnabled: !connection.voiceOrderingEnabled })}
             className={cn("flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 text-xs font-medium transition-all border",
-              connection.voiceOrderingEnabled ? "bg-[#31a8ff]/10 border-[#31a8ff]/30 text-[#31a8ff]" : "bg-[#21262d] border-[#30363d]/50 text-[#8b949e]"
+              connection.voiceOrderingEnabled ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted border-border/50 text-muted-foreground"
             )}>
             <Mic className="h-3.5 w-3.5" /> Voice {connection.voiceOrderingEnabled ? "ON" : "OFF"}
           </button>
           <button onClick={() => onUpdateConnection({ autoOrderEnabled: !connection.autoOrderEnabled })}
             className={cn("flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 text-xs font-medium transition-all border",
-              connection.autoOrderEnabled ? "bg-[#31a8ff]/10 border-[#31a8ff]/30 text-[#31a8ff]" : "bg-[#21262d] border-[#30363d]/50 text-[#8b949e]"
+              connection.autoOrderEnabled ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted border-border/50 text-muted-foreground"
             )}>
             <Zap className="h-3.5 w-3.5" /> Auto {connection.autoOrderEnabled ? "ON" : "OFF"}
           </button>
@@ -545,33 +522,33 @@ function AlexaPage({ connection, rules, onToggleRule, onUpdateConnection, onTrig
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-[#f0883e]">{dueItems.length} items ready</p>
-              <p className="text-xs text-[#8b949e]">{dueItems.map((i) => i.itemName).join(", ")}</p>
+              <p className="text-xs text-muted-foreground">{dueItems.map((i) => i.itemName).join(", ")}</p>
             </div>
-            <button onClick={onTriggerOrder} className="rounded-xl bg-[#31a8ff] px-4 py-2 text-xs font-bold text-white shadow-[0_0_8px_#31a8ff40]">Order Now</button>
+            <button onClick={onTriggerOrder} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-[0_0_8px_#31a8ff40]">Order Now</button>
           </div>
         </div>
       )}
 
       {/* Rules */}
       <div>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#8b949e]">AI Auto-Order Rules</h3>
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Auto-Order Rules</h3>
         <div className="space-y-2">
           {rules.map((rule) => (
             <div key={rule.id} className={cn("flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all",
-              rule.enabled ? "bg-[#161b22] border-[#30363d]/50" : "bg-[#0d1117] border-[#21262d] opacity-50"
+              rule.enabled ? "bg-card border-border/50" : "bg-background border-[#21262d] opacity-50"
             )}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{rule.itemName}</span>
-                  {rule.preferredBrand && <span className="text-[10px] text-[#8b949e]">{rule.preferredBrand}</span>}
+                  {rule.preferredBrand && <span className="text-[10px] text-muted-foreground">{rule.preferredBrand}</span>}
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-[#8b949e]">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                   <span>Every {rule.learnedInterval}d</span><span>·</span><span>{rule.quantity} {rule.unit}</span><span>·</span>
                   <span className="text-[#3fb950]">{Math.round(rule.confidenceScore * 100)}%</span>
                 </div>
               </div>
               <button onClick={() => onToggleRule(rule.id)}
-                className={cn("relative h-6 w-11 rounded-full transition-colors", rule.enabled ? "bg-[#31a8ff]" : "bg-[#21262d]")}
+                className={cn("relative h-6 w-11 rounded-full transition-colors", rule.enabled ? "bg-primary" : "bg-muted")}
                 role="switch" aria-checked={rule.enabled}>
                 <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform", rule.enabled ? "left-[22px]" : "left-0.5")} />
               </button>
@@ -582,30 +559,30 @@ function AlexaPage({ connection, rules, onToggleRule, onUpdateConnection, onTrig
 
       {/* Order history */}
       <div>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Recent Orders</h3>
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Orders</h3>
         <div className="space-y-2">
           {connection.orderHistory.slice(0, 5).map((order) => (
-            <div key={order.id} className="flex items-center gap-3 rounded-2xl bg-[#161b22] border border-[#30363d]/30 px-4 py-3">
+            <div key={order.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border/30 px-4 py-3">
               <span className="text-lg">{order.triggeredBy === "voice" ? "🎙" : order.triggeredBy === "auto" ? "🤖" : "👆"}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium truncate">{order.items.join(", ")}</p>
-                <p className="text-[10px] text-[#8b949e]">{order.date} · {order.triggeredBy}</p>
+                <p className="text-[10px] text-muted-foreground">{order.date} · {order.triggeredBy}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs font-medium">${order.total.toFixed(2)}</p>
-                <p className={cn("text-[10px]", order.status === "delivered" ? "text-[#3fb950]" : "text-[#31a8ff]")}>{order.status}</p>
+                <p className={cn("text-[10px]", order.status === "delivered" ? "text-[#3fb950]" : "text-primary")}>{order.status}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/30 p-4">
+      <div className="rounded-2xl bg-card border border-border/30 p-4">
         <div className="flex items-center gap-2 mb-2">
-          <Wifi className="h-4 w-4 text-[#31a8ff]" />
+          <Wifi className="h-4 w-4 text-primary" />
           <p className="text-sm font-semibold">How PantryPilot Learns</p>
         </div>
-        <ul className="space-y-1.5 text-xs text-[#8b949e]">
+        <ul className="space-y-1.5 text-xs text-muted-foreground">
           <li>• Tracks purchase intervals to predict restock dates</li>
           <li>• Remembers preferred brands from repeat orders</li>
           <li>• Syncs with Alexa: "Alexa, restock my kitchen"</li>
@@ -627,7 +604,7 @@ function CartPanel({ cart, onRemove, onBack }: { cart: GroceryItem[]; onRemove: 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="flex items-center gap-3 px-5 py-4">
-        <button onClick={onBack} className="flex items-center gap-1.5 rounded-full bg-[#161b22] border border-[#30363d]/50 px-3 py-1.5 text-sm text-[#8b949e] hover:text-white">
+        <button onClick={onBack} className="flex items-center gap-1.5 rounded-full bg-card border border-border/50 px-3 py-1.5 text-sm text-muted-foreground hover:text-white">
           <ChevronLeft className="h-4 w-4" /> Back
         </button>
         <h2 className="flex-1 text-center font-semibold">Cart ({cart.length})</h2>
@@ -635,7 +612,7 @@ function CartPanel({ cart, onRemove, onBack }: { cart: GroceryItem[]; onRemove: 
       </header>
       <main className="flex-1 overflow-y-auto px-4 pb-8">
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-[#8b949e]">
+          <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
             <ShoppingCart className="h-12 w-12 opacity-40" />
             <p className="text-sm">Your cart is empty</p>
           </div>
@@ -645,21 +622,21 @@ function CartPanel({ cart, onRemove, onBack }: { cart: GroceryItem[]; onRemove: 
               <Check className="h-8 w-8 text-[#3fb950]" />
             </div>
             <p className="font-medium">Order placed!</p>
-            <p className="text-sm text-[#8b949e]">Redirected to delivery service</p>
+            <p className="text-sm text-muted-foreground">Redirected to delivery service</p>
           </div>
         ) : (
           <div className="space-y-2">
             {cart.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-[#161b22] border border-[#30363d]/30 px-4 py-3">
+              <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border/30 px-4 py-3">
                 <span className="text-2xl">{item.image}</span>
                 <div className="flex-1">
                   <p className="text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-[#8b949e]">{item.quantity} {item.unit}{item.preferredBrand && ` · ${item.preferredBrand}`}</p>
+                  <p className="text-xs text-muted-foreground">{item.quantity} {item.unit}{item.preferredBrand && ` · ${item.preferredBrand}`}</p>
                 </div>
                 <button onClick={() => onRemove(item.id)} className="rounded-xl bg-[#f85149]/10 border border-[#f85149]/20 px-2.5 py-1 text-xs text-[#f85149]">Remove</button>
               </div>
             ))}
-            <button onClick={handleOrder} className="mt-6 w-full rounded-2xl bg-[#31a8ff] py-3.5 text-sm font-bold text-white shadow-[0_0_12px_#31a8ff40] hover:bg-[#31a8ff]/90">
+            <button onClick={handleOrder} className="mt-6 w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-white shadow-[0_0_12px_#31a8ff40] hover:bg-primary/90">
               Place Order via Amazon Fresh →
             </button>
           </div>
@@ -678,7 +655,7 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="flex items-center gap-3 px-5 py-4">
-        <button onClick={onBack} className="flex items-center gap-1.5 rounded-full bg-[#161b22] border border-[#30363d]/50 px-3 py-1.5 text-sm text-[#8b949e] hover:text-white">
+        <button onClick={onBack} className="flex items-center gap-1.5 rounded-full bg-card border border-border/50 px-3 py-1.5 text-sm text-muted-foreground hover:text-white">
           <ChevronLeft className="h-4 w-4" /> Back
         </button>
         <h2 className="flex-1 text-center font-semibold">Settings</h2>
@@ -686,28 +663,28 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
       </header>
       <main className="flex-1 overflow-y-auto px-4 pb-8 space-y-6">
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Automation</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Automation</h3>
           <ToggleRow label="Auto-reorder enabled" description="Manage items marked for auto-reorder" checked={preferences.autoReorderEnabled} onChange={(v) => onUpdate({ autoReorderEnabled: v })} />
           <ToggleRow label="Auto-add critical items" description="Critical items added to cart automatically" checked={preferences.autoAddCritical} onChange={(v) => onUpdate({ autoAddCritical: v })} />
-          <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
+          <div className="rounded-2xl bg-card border border-border/50 p-4">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm font-medium">Urgency threshold</p><p className="text-xs text-[#8b949e]">Days before flagging</p></div>
+              <div><p className="text-sm font-medium">Urgency threshold</p><p className="text-xs text-muted-foreground">Days before flagging</p></div>
               <div className="flex items-center gap-2">
-                <button onClick={() => onUpdate({ urgencyThresholdDays: Math.max(1, preferences.urgencyThresholdDays - 1) })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#21262d] text-sm hover:bg-[#30363d]">−</button>
+                <button onClick={() => onUpdate({ urgencyThresholdDays: Math.max(1, preferences.urgencyThresholdDays - 1) })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-sm hover:bg-[#30363d]">−</button>
                 <span className="w-6 text-center font-bold">{preferences.urgencyThresholdDays}</span>
-                <button onClick={() => onUpdate({ urgencyThresholdDays: preferences.urgencyThresholdDays + 1 })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#21262d] text-sm hover:bg-[#30363d]">+</button>
+                <button onClick={() => onUpdate({ urgencyThresholdDays: preferences.urgencyThresholdDays + 1 })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-sm hover:bg-[#30363d]">+</button>
               </div>
             </div>
           </div>
         </section>
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Robin Voice & Privacy</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Robin Voice & Privacy</h3>
           <ToggleRow label="Voice activation" description="Hold key to talk" checked={preferences.robinVoiceEnabled} onChange={(v) => onUpdate({ robinVoiceEnabled: v })} />
-          <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
+          <div className="rounded-2xl bg-card border border-border/50 p-4">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm font-medium">Voice activation key</p><p className="text-xs text-[#8b949e]">Key to hold for voice commands</p></div>
+              <div><p className="text-sm font-medium">Voice activation key</p><p className="text-xs text-muted-foreground">Key to hold for voice commands</p></div>
               <select value={preferences.voiceActivationKey} onChange={(e) => onUpdate({ voiceActivationKey: e.target.value })}
-                className="rounded-lg bg-[#21262d] border border-[#30363d] px-3 py-1.5 text-sm outline-none">
+                className="rounded-lg bg-muted border border-border px-3 py-1.5 text-sm outline-none">
                 <option value="Space">Spacebar</option>
                 <option value="KeyR">R key</option>
                 <option value="KeyV">V key</option>
@@ -716,27 +693,27 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
               </select>
             </div>
           </div>
-          <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
+          <div className="rounded-2xl bg-card border border-border/50 p-4">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm font-medium">Auto-sleep timeout</p><p className="text-xs text-[#8b949e]">Seconds before Robin stops listening</p></div>
+              <div><p className="text-sm font-medium">Auto-sleep timeout</p><p className="text-xs text-muted-foreground">Seconds before Robin stops listening</p></div>
               <div className="flex items-center gap-2">
-                <button onClick={() => onUpdate({ robinSleepTimeout: Math.max(1, preferences.robinSleepTimeout - 1) })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#21262d] text-sm hover:bg-[#30363d]">−</button>
+                <button onClick={() => onUpdate({ robinSleepTimeout: Math.max(1, preferences.robinSleepTimeout - 1) })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-sm hover:bg-[#30363d]">−</button>
                 <span className="w-6 text-center font-bold">{preferences.robinSleepTimeout}s</span>
-                <button onClick={() => onUpdate({ robinSleepTimeout: Math.min(30, preferences.robinSleepTimeout + 1) })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#21262d] text-sm hover:bg-[#30363d]">+</button>
+                <button onClick={() => onUpdate({ robinSleepTimeout: Math.min(30, preferences.robinSleepTimeout + 1) })} className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-sm hover:bg-[#30363d]">+</button>
               </div>
             </div>
           </div>
         </section>
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Appearance</h3>
-          <div className="rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Appearance</h3>
+          <div className="rounded-2xl bg-card border border-border/50 p-4">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm font-medium">Theme</p><p className="text-xs text-[#8b949e]">Alexa Echo UI style</p></div>
+              <div><p className="text-sm font-medium">Theme</p><p className="text-xs text-muted-foreground">Alexa Echo UI style</p></div>
               <div className="flex gap-1">
                 {(["system", "light", "dark"] as const).map((mode) => (
                   <button key={mode} onClick={() => onUpdate({ themeMode: mode })}
                     className={cn("rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all",
-                      preferences.themeMode === mode ? "bg-[#31a8ff] text-white" : "bg-[#21262d] text-[#8b949e] hover:text-white"
+                      preferences.themeMode === mode ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:text-white"
                     )}>{mode}</button>
                 ))}
               </div>
@@ -744,20 +721,20 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
           </div>
         </section>
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Notifications</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notifications</h3>
           <ToggleRow label="Low stock alerts" description="Notify when items running low" checked={preferences.notifications.lowStock} onChange={(v) => onUpdate({ notifications: { ...preferences.notifications, lowStock: v } })} />
           <ToggleRow label="Auto-order confirmation" description="Notify when items auto-added" checked={preferences.notifications.autoOrderConfirmation} onChange={(v) => onUpdate({ notifications: { ...preferences.notifications, autoOrderConfirmation: v } })} />
         </section>
         <section className="space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8b949e]">Auto-Reorder Items ({autoReorderItems.length})</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Auto-Reorder Items ({autoReorderItems.length})</h3>
           {autoReorderItems.length === 0 ? (
-            <p className="rounded-2xl bg-[#161b22] border border-[#30363d]/30 p-4 text-center text-sm text-[#8b949e]">Tap ⚡ on any item to enable.</p>
+            <p className="rounded-2xl bg-card border border-border/30 p-4 text-center text-sm text-muted-foreground">Tap ⚡ on any item to enable.</p>
           ) : (
             <div className="space-y-2">
               {autoReorderItems.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-[#31a8ff]/5 border border-[#31a8ff]/20 px-4 py-3">
+                <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/20 px-4 py-3">
                   <span className="text-xl">{item.image}</span>
-                  <div className="flex-1"><p className="text-sm font-medium">{item.name}</p><p className="text-xs text-[#8b949e]">Every ~{item.avgConsumptionDays}d{item.preferredBrand && ` · ${item.preferredBrand}`}</p></div>
+                  <div className="flex-1"><p className="text-sm font-medium">{item.name}</p><p className="text-xs text-muted-foreground">Every ~{item.avgConsumptionDays}d{item.preferredBrand && ` · ${item.preferredBrand}`}</p></div>
                   <button onClick={() => onToggleAutoReorder(item.id)} className="rounded-xl bg-[#f85149]/10 border border-[#f85149]/20 px-2 py-1 text-xs text-[#f85149]">Remove</button>
                 </div>
               ))}
@@ -772,10 +749,10 @@ function SettingsPanel({ preferences, onUpdate, items, onToggleAutoReorder, onBa
 /* ─── Toggle Row (Alexa Style) ─── */
 function ToggleRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-[#161b22] border border-[#30363d]/50 p-4">
-      <div><p className="text-sm font-medium">{label}</p><p className="text-xs text-[#8b949e]">{description}</p></div>
+    <div className="flex items-center justify-between rounded-2xl bg-card border border-border/50 p-4">
+      <div><p className="text-sm font-medium">{label}</p><p className="text-xs text-muted-foreground">{description}</p></div>
       <button onClick={() => onChange(!checked)}
-        className={cn("relative h-7 w-12 rounded-full transition-colors", checked ? "bg-[#31a8ff]" : "bg-[#21262d]")}
+        className={cn("relative h-7 w-12 rounded-full transition-colors", checked ? "bg-primary" : "bg-muted")}
         role="switch" aria-checked={checked} aria-label={label}>
         <span className={cn("absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform", checked ? "left-[22px]" : "left-0.5")} />
       </button>

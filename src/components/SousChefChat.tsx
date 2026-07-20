@@ -66,6 +66,9 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
     } else if (stripped.includes("cart") || stripped.includes("basket")) {
       response = "Opening cart.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "cart" }));
+    } else if (stripped.includes("dashboard") || stripped.includes("homepulse") || stripped.includes("home pulse") || stripped.includes("finance")) {
+      response = "Taking you to HomePulse.";
+      window.open("/dashboard/index.html", "_blank");
     } else if (t.includes("light mode") || t.includes("light theme") || t.includes("turn on lights")) {
       response = "Switching to light mode.";
       window.dispatchEvent(new CustomEvent("robin-theme", { detail: "light" }));
@@ -351,80 +354,106 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
     "Change preferences",
   ];
 
-  // Floating logo — like Siri: TAP to listen, that's it
+  // Floating Robin widget — draggable logo with 3 action buttons
+  const [widgetPos, setWidgetPos] = useState({ x: window.innerWidth - 180, y: 16 });
+  const [dragging, setDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [didDrag, setDidDrag] = useState(false);
+
   if (!isOpen) {
     return (
       <>
-        {/* The Robin button — fixed position, just tap it */}
-        <div className="fixed top-4 right-4 z-40" style={{ width: "80px", height: "80px" }}>
+        <div
+          className="fixed z-40 select-none touch-none"
+          style={{ left: `${widgetPos.x}px`, top: `${widgetPos.y}px`, width: "160px" }}
+          onPointerDown={(e) => {
+            setDragging(true); setDidDrag(false);
+            setDragOffset({ x: e.clientX - widgetPos.x, y: e.clientY - widgetPos.y });
+          }}
+          onPointerMove={(e) => {
+            if (!dragging) return;
+            const dx = Math.abs(e.clientX - dragOffset.x - widgetPos.x);
+            const dy = Math.abs(e.clientY - dragOffset.y - widgetPos.y);
+            if (dx > 5 || dy > 5) setDidDrag(true);
+            setWidgetPos({
+              x: Math.max(0, Math.min(window.innerWidth - 160, e.clientX - dragOffset.x)),
+              y: Math.max(0, Math.min(window.innerHeight - 220, e.clientY - dragOffset.y)),
+            });
+          }}
+          onPointerUp={() => setDragging(false)}
+        >
+          {/* Logo — tap to activate voice */}
           <button
-            onClick={listenForOneCommand}
-            className="relative h-full w-full rounded-full overflow-hidden border-2 border-[#30363d] shadow-xl transition-transform active:scale-90 focus:outline-none"
+            onClick={() => { if (!didDrag) listenForOneCommand(); }}
+            className="relative mx-auto block w-[140px] h-[140px] rounded-3xl overflow-hidden border-2 shadow-2xl transition-transform active:scale-95"
             style={{
-              borderColor: voiceActive ? "#3fb950" : "#30363d",
-              boxShadow: voiceActive ? "0 0 20px #3fb950, 0 0 40px #3fb95040" : "0 4px 20px rgba(0,0,0,0.5)",
+              borderColor: voiceActive ? "#3fb950" : sessionActive ? "#f0c000" : "rgba(200,200,200,0.3)",
+              boxShadow: voiceActive ? "0 0 24px #3fb95060" : "0 8px 32px rgba(0,0,0,0.4)",
             }}
             aria-label="Tap to talk to Robin"
           >
-            <img src="/chef-logo.png" alt="Robin" className="h-full w-full object-cover" draggable={false} />
+            <img src="/chef-logo.png" alt="Robin" className="h-full w-full object-cover pointer-events-none" draggable={false} />
 
-            {/* Green mic indicator */}
-            <span
-              className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-[#0d1117]"
-              style={{ background: voiceActive ? "#3fb950" : sessionActive ? "#f0c000" : "#484f58", boxShadow: voiceActive ? "0 0 6px #3fb950" : sessionActive ? "0 0 6px #f0c000" : "none" }}
-            />
-
-            {/* Listening overlay */}
+            {/* Voice overlay */}
             {voiceActive && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#31a8ff]/30 backdrop-blur-sm">
-                <div className="flex items-center gap-0.5">
-                  <span className="h-3 w-0.5 rounded-full bg-white animate-pulse" />
-                  <span className="h-4 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "100ms" }} />
-                  <span className="h-5 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "200ms" }} />
-                  <span className="h-4 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "300ms" }} />
-                  <span className="h-3 w-0.5 rounded-full bg-white animate-pulse" style={{ animationDelay: "400ms" }} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#31a8ff]/30 backdrop-blur-sm rounded-3xl">
+                <div className="flex items-center gap-1">
+                  <span className="h-4 w-1 rounded-full bg-white animate-pulse" />
+                  <span className="h-6 w-1 rounded-full bg-white animate-pulse" style={{ animationDelay: "100ms" }} />
+                  <span className="h-8 w-1 rounded-full bg-white animate-pulse" style={{ animationDelay: "200ms" }} />
+                  <span className="h-6 w-1 rounded-full bg-white animate-pulse" style={{ animationDelay: "300ms" }} />
+                  <span className="h-4 w-1 rounded-full bg-white animate-pulse" style={{ animationDelay: "400ms" }} />
                 </div>
               </div>
             )}
+
+            {/* Status dot */}
+            <span className="absolute top-2 right-2 h-3 w-3 rounded-full border-2 border-black/50"
+              style={{ background: voiceActive ? "#3fb950" : sessionActive ? "#f0c000" : "#666" }} />
           </button>
 
-          {/* Live transcript below the button */}
+          {/* 3 Action buttons below logo */}
+          <div className="mt-2 flex justify-center gap-2 rounded-full bg-[#d4d4d4] dark:bg-[#2a2a2a] px-3 py-2 mx-auto w-fit shadow-lg">
+            <button onClick={() => { if (!didDrag) setIsOpen(true); }} title="Type" className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-[#c0c0c0] dark:bg-[#3a3a3a] hover:bg-[#aaa] dark:hover:bg-[#4a4a4a] transition-colors">
+              <svg className="h-5 w-5 text-[#222] dark:text-[#ddd]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+              <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Type</span>
+            </button>
+            <button onClick={() => { if (!didDrag) listenForOneCommand(); }} title="Call" className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-[#c0c0c0] dark:bg-[#3a3a3a] hover:bg-[#aaa] dark:hover:bg-[#4a4a4a] transition-colors">
+              <svg className="h-5 w-5 text-[#222] dark:text-[#ddd]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>
+              <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Call</span>
+            </button>
+            <button title="Share Screen" className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-[#c0c0c0] dark:bg-[#3a3a3a] hover:bg-[#aaa] dark:hover:bg-[#4a4a4a] transition-colors">
+              <svg className="h-5 w-5 text-[#222] dark:text-[#ddd]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /><path d="M17 8l-5 5-5-5" strokeLinecap="round" /></svg>
+              <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Share Screen</span>
+            </button>
+          </div>
+
+          {/* Live transcript */}
           {voiceActive && liveTranscript && (
-            <div className="absolute top-full mt-2 right-0 w-48 rounded-xl bg-[#161b22] border border-[#30363d] px-3 py-2 shadow-lg">
-              <p className="text-[11px] text-[#e6edf3] leading-tight">"{liveTranscript}"</p>
+            <div className="mt-2 mx-auto w-48 rounded-xl bg-card border border-border px-3 py-2 shadow-lg">
+              <p className="text-[11px] text-foreground leading-tight text-center">"{liveTranscript}"</p>
             </div>
           )}
           {voiceActive && !liveTranscript && (
-            <div className="absolute top-full mt-2 right-0 rounded-xl bg-[#161b22] border border-[#30363d] px-3 py-2 shadow-lg">
-              <p className="text-[11px] text-[#3fb950] font-medium">Listening...</p>
+            <div className="mt-2 mx-auto rounded-xl bg-card border border-border px-3 py-2 shadow-lg w-fit">
+              <p className="text-[11px] text-[#3fb950] font-medium text-center">Listening...</p>
             </div>
           )}
           {!voiceActive && sessionActive && (
-            <div className="absolute top-full mt-2 right-0 rounded-xl bg-[#161b22] border border-[#f0c000]/30 px-3 py-2 shadow-lg">
-              <p className="text-[11px] text-[#f0c000] font-medium">Ready for next command...</p>
-              <p className="text-[9px] text-[#8b949e]">Spacebar or speak</p>
+            <div className="mt-2 mx-auto rounded-xl bg-card border border-[#f0c000]/30 px-3 py-2 shadow-lg w-fit">
+              <p className="text-[11px] text-[#f0c000] font-medium text-center">Ready...</p>
             </div>
-          )}
-
-          {/* Chat button */}
-          {!voiceActive && (
-            <button
-              onClick={() => setIsOpen(true)}
-              className="absolute -bottom-1 -left-1 rounded-full bg-[#161b22] border border-[#30363d] px-2 py-0.5 text-[8px] font-bold text-[#31a8ff] hover:bg-[#31a8ff]/10"
-            >
-              Chat
-            </button>
           )}
         </div>
 
         {/* Mini response bubble */}
         {miniChatOpen && (
-          <div className="fixed top-24 right-4 z-40 w-64 rounded-2xl bg-[#161b22] border border-[#30363d] px-4 py-3 shadow-2xl">
+          <div className="fixed top-4 left-4 z-40 w-64 rounded-2xl bg-card border border-border px-4 py-3 shadow-2xl">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold text-[#31a8ff]">Robin</span>
-              <button onClick={() => { setMiniChatOpen(false); setMiniMessage(""); }} className="text-[#8b949e] text-xs hover:text-white">✕</button>
+              <span className="text-[10px] font-bold text-primary">Robin</span>
+              <button onClick={() => { setMiniChatOpen(false); setMiniMessage(""); }} className="text-muted-foreground text-xs hover:text-foreground">✕</button>
             </div>
-            <p className="text-[12px] text-[#e6edf3] leading-relaxed">{miniMessage}</p>
+            <p className="text-[12px] text-foreground leading-relaxed">{miniMessage}</p>
           </div>
         )}
       </>
