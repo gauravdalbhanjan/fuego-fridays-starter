@@ -227,6 +227,24 @@
             </div>
         </div>
 
+        <!-- Trend Charts -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div class="section">
+            <div style="font-size:13px;color:#666;">Network Uptime % <span class="material-icons" style="font-size:14px;vertical-align:middle;">info_outline</span></div>
+            <div style="font-size:28px;font-weight:700;color:#1a2332;">99.9%</div>
+            <div style="font-size:12px;color:#888;">Target: 99.5%</div>
+            <canvas id="uptimeChart" height="160"></canvas>
+            <div style="font-size:11px;color:#888;margin-top:8px;">● Actual Uptime &nbsp; <span style="color:#4caf50;">● Target</span></div>
+          </div>
+          <div class="section">
+            <div style="font-size:13px;color:#666;">Automation Triggers/Day <span class="material-icons" style="font-size:14px;vertical-align:middle;">info_outline</span></div>
+            <div style="font-size:28px;font-weight:700;color:#1a2332;">12</div>
+            <div style="font-size:12px;color:#888;">Target: 10</div>
+            <canvas id="triggerChart" height="160"></canvas>
+            <div style="font-size:11px;color:#888;margin-top:8px;">● Actual Triggers &nbsp; <span style="color:#4caf50;">● Target</span></div>
+          </div>
+        </div>
+
         <!-- Patterns -->
         <div class="section">
             <h2><span class="material-icons">insights</span> Device Patterns</h2>
@@ -274,5 +292,20 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+    const dates = ['Jul 1','Jul 3','Jul 5','Jul 7','Jul 9','Jul 11','Jul 13','Jul 15','Jul 17','Jul 19'];
+    const chartOpts = {responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f0f0f0'}}}};
+
+    new Chart(document.getElementById('uptimeChart'),{type:'line',data:{labels:dates,datasets:[
+      {label:'Actual',data:[99.8,99.9,99.7,99.9,100,99.9,99.8,99.9,99.9,99.9],borderColor:'#1a73e8',backgroundColor:'rgba(26,115,232,0.05)',fill:true,tension:0.3,pointRadius:2},
+      {label:'Target',data:[99.5,99.5,99.5,99.5,99.5,99.5,99.5,99.5,99.5,99.5],borderColor:'#4caf50',borderDash:[6,4],pointRadius:0}
+    ]},options:chartOpts});
+
+    new Chart(document.getElementById('triggerChart'),{type:'line',data:{labels:dates,datasets:[
+      {label:'Actual',data:[8,9,9,10,10,11,11,12,12,12],borderColor:'#f44336',backgroundColor:'rgba(244,67,54,0.05)',fill:true,tension:0.3,pointRadius:2},
+      {label:'Target',data:[10,10,10,10,10,10,10,10,10,10],borderColor:'#4caf50',borderDash:[6,4],pointRadius:0}
+    ]},options:chartOpts});
+    </script>
 </body>
 </html>

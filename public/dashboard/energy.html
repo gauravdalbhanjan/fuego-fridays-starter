@@ -158,39 +158,22 @@
             </div>
         </div>
 
-        <!-- Monthly Usage Chart -->
-        <div class="section">
-            <h2><span class="material-icons">bar_chart</span> Monthly Usage (Last 6 Months)</h2>
-            <div class="bar-row">
-                <span class="bar-label">Jan</span>
-                <div class="bar-track"><div class="bar-fill" style="width:72%;background:#1a73e8"></div></div>
-                <span class="bar-value">298 kWh</span>
-            </div>
-            <div class="bar-row">
-                <span class="bar-label">Feb</span>
-                <div class="bar-track"><div class="bar-fill" style="width:65%;background:#1a73e8"></div></div>
-                <span class="bar-value">274 kWh</span>
-            </div>
-            <div class="bar-row">
-                <span class="bar-label">Mar</span>
-                <div class="bar-track"><div class="bar-fill" style="width:70%;background:#1a73e8"></div></div>
-                <span class="bar-value">289 kWh</span>
-            </div>
-            <div class="bar-row">
-                <span class="bar-label">Apr</span>
-                <div class="bar-track"><div class="bar-fill" style="width:75%;background:#1a73e8"></div></div>
-                <span class="bar-value">310 kWh</span>
-            </div>
-            <div class="bar-row">
-                <span class="bar-label">May</span>
-                <div class="bar-track"><div class="bar-fill" style="width:78%;background:#ff9800"></div></div>
-                <span class="bar-value">321 kWh</span>
-            </div>
-            <div class="bar-row">
-                <span class="bar-label">Jun</span>
-                <div class="bar-track"><div class="bar-fill" style="width:83%;background:#f44336"></div></div>
-                <span class="bar-value">342 kWh</span>
-            </div>
+        <!-- Charts -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div class="section">
+            <div style="font-size:13px;color:#666;">Monthly Usage <span class="material-icons" style="font-size:14px;vertical-align:middle;">info_outline</span></div>
+            <div style="font-size:28px;font-weight:700;color:#1a2332;">342 kWh</div>
+            <div style="font-size:12px;color:#888;">Target: 300 · Previous: 321</div>
+            <canvas id="usageChart" height="160"></canvas>
+            <div style="font-size:11px;color:#888;margin-top:8px;">● Actual Usage &nbsp; <span style="color:#4caf50;">● Target</span></div>
+          </div>
+          <div class="section">
+            <div style="font-size:13px;color:#666;">Monthly Cost <span class="material-icons" style="font-size:14px;vertical-align:middle;">info_outline</span></div>
+            <div style="font-size:28px;font-weight:700;color:#1a2332;">$89.40</div>
+            <div style="font-size:12px;color:#888;">Target: $75 · Previous: $77.10</div>
+            <canvas id="costChart" height="160"></canvas>
+            <div style="font-size:11px;color:#888;margin-top:8px;">● Actual Cost &nbsp; <span style="color:#4caf50;">● Budget Target</span></div>
+          </div>
         </div>
 
         <!-- Patterns -->
@@ -242,5 +225,20 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+    const dates = ['Jul 1','Jul 3','Jul 5','Jul 7','Jul 9','Jul 11','Jul 13','Jul 15','Jul 17','Jul 19'];
+    const chartOpts = {responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f0f0f0'}}}};
+
+    new Chart(document.getElementById('usageChart'),{type:'line',data:{labels:dates,datasets:[
+      {label:'Actual',data:[298,305,289,310,315,320,318,330,335,342],borderColor:'#1a73e8',backgroundColor:'rgba(26,115,232,0.05)',fill:true,tension:0.3,pointRadius:2},
+      {label:'Target',data:[300,300,300,300,300,300,300,300,300,300],borderColor:'#4caf50',borderDash:[6,4],pointRadius:0}
+    ]},options:chartOpts});
+
+    new Chart(document.getElementById('costChart'),{type:'line',data:{labels:dates,datasets:[
+      {label:'Actual',data:[72,74,71,77,79,81,83,85,87,89.4],borderColor:'#f44336',backgroundColor:'rgba(244,67,54,0.05)',fill:true,tension:0.3,pointRadius:2},
+      {label:'Target',data:[75,75,75,75,75,75,75,75,75,75],borderColor:'#4caf50',borderDash:[6,4],pointRadius:0}
+    ]},options:chartOpts});
+    </script>
 </body>
 </html>
