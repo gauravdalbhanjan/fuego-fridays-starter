@@ -67,8 +67,8 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
       response = "Opening cart.";
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "cart" }));
     } else if (stripped.includes("dashboard") || stripped.includes("homepulse") || stripped.includes("home pulse") || stripped.includes("finance")) {
-      response = "Taking you to HomePulse.";
-      window.open("/dashboard/index.html", "_blank");
+      response = "Opening HomePulse.";
+      window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "homepulse" }));
     } else if (t.includes("light mode") || t.includes("light theme") || t.includes("turn on lights")) {
       response = "Switching to light mode.";
       window.dispatchEvent(new CustomEvent("robin-theme", { detail: "light" }));
