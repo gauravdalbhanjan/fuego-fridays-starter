@@ -266,118 +266,15 @@ function sendMsg(){
     }
   },400);
 }
-  // Save to localStorage
-  try{localStorage.setItem("robin_memory",JSON.stringify(mem));}catch(e){}
-  setTimeout(function(){
-    var t=text.toLowerCase(),r="",action=null;
 
-    // Check learned commands first
-    for(var key in mem.learned){
-      if(t.includes(key)){r=mem.learned[key].response;action=mem.learned[key].action;break;}
-    }
-
-    if(!r){
-      // Navigation
-      if(t.includes("menu")||t.includes("cook")||t.includes("food")){r="Opening menu for you!";action={type:"navigate",detail:"menu"};}
-      else if(t.includes("inventory")||t.includes("pantry")||t.includes("stock")){r="Switching to inventory.";action={type:"navigate",detail:"inventory"};}
-      else if(t.includes("routine")||t.includes("schedule")){r="Here's your routine.";action={type:"navigate",detail:"routine"};}
-      else if(t.includes("alexa")||t.includes("order")){r="Opening Alexa orders.";action={type:"navigate",detail:"events"};}
-      else if(t.includes("dashboard")||t.includes("homepulse")){r="Taking you to HomePulse.";action={type:"url",url:"/dashboard/index.html"};}
-      else if(t.includes("energy")){r="Opening energy metrics.";action={type:"url",url:"/dashboard/energy.html"};}
-      else if(t.includes("grocery")){r="Opening grocery details.";action={type:"url",url:"/dashboard/grocery.html"};}
-      else if(t.includes("clean")){r="Opening cleaning supplies.";action={type:"url",url:"/dashboard/cleaning.html"};}
-      else if(t.includes("security")||t.includes("camera")){r="Opening security feed.";action={type:"url",url:"/dashboard/security.html"};}
-      else if(t.includes("smart")||t.includes("device")){r="Opening smart devices.";action={type:"url",url:"/dashboard/smart-devices.html"};}
-      // Theme
-      else if(t.includes("dark mode")||t.includes("dark theme")){r="Done! Switched to dark mode.";action={type:"theme",detail:"dark"};}
-      else if(t.includes("light mode")||t.includes("light theme")){r="Done! Switched to light mode.";action={type:"theme",detail:"light"};}
-      // Settings
-      else if(t.includes("setting")){r="Opening settings for you.";action={type:"navigate",detail:"settings"};}
-      // Learning - user teaches Robin
-      else if(t.startsWith("remember")||t.startsWith("learn")){
-        var parts=t.replace(/^(remember|learn)\s+(that\s+)?/i,"").split(" means ");
-        if(parts.length===2){
-          mem.learned[parts[0].trim()]={response:"Got it! "+parts[1].trim(),action:null};
-          r="Learned! Next time you say \""+parts[0].trim()+"\", I'll know what to do.";
-        }else{r="Tell me like: \"remember [phrase] means [action]\"";}
-      }
-      // Preferences
-      else if(t.includes("i like")||t.includes("i prefer")||t.includes("my favorite")){
-        var pref=t.replace(/^(i like|i prefer|my favorite is?)\s*/i,"");
-        mem.preferences[Date.now()]=pref;
-        r="Noted! I'll remember that you like "+pref+". I'll factor this into suggestions.";
-      }
-      else if(t.includes("i don't like")||t.includes("i hate")||t.includes("stop suggesting")){
-        var dislike=t.replace(/^(i don't like|i hate|stop suggesting)\s*/i,"");
-        mem.preferences["dislike_"+Date.now()]=dislike;
-        r="Got it — I'll avoid "+dislike+" in future suggestions.";
-      }
-      // Questions - Robin asks back
-      else if(t.includes("what should")||t.includes("suggest")||t.includes("recommend")){
-        var hour=new Date().getHours();
-        if(hour<10)r="It's morning! Based on your pantry, how about a quick breakfast? I see you have eggs and bread. Want me to suggest a recipe?";
-        else if(hour<14)r="Lunch time approaching. You have ingredients for a salad or sandwich. Want me to open the menu with options?";
-        else if(hour<18)r="Afternoon snack? Your fruit supply looks good. Or I can check what's running low for a restock.";
-        else r="Dinner time! Based on what's in stock, I'd suggest pasta or stir fry. Want me to show matching recipes?";
-        mem.context="suggesting_meal";
-      }
-      else if(t.includes("yes")||t.includes("sure")||t.includes("yeah")||t.includes("ok")){
-        if(mem.context==="suggesting_meal"){r="Opening the menu with dishes you can make right now!";action={type:"navigate",detail:"menu"};mem.context=null;}
-        else if(mem.context==="confirm_order"){r="Order confirmed! I'll add those items.";mem.context=null;}
-        else{r="What would you like me to do?";}
-      }
-      else if(t.includes("no")||t.includes("nah")||t.includes("not now")){
-        r="No problem! Let me know whenever you need something.";mem.context=null;
-      }
-      // What do I have / status
-      else if(t.includes("what do i have")||t.includes("what's in")||t.includes("status")){
-        r="Let me check your pantry... You have 29 items tracked. 11 are running low. Want me to show the inventory?";
-        mem.context="show_inventory";
-      }
-      else if(t.includes("running low")||t.includes("need to buy")||t.includes("restock")){
-        r="I see 11 items running low. Should I add them to your cart automatically, or show you the list first?";
-        mem.context="confirm_order";
-      }
-      // Greetings
-      else if(t.includes("hi")||t.includes("hello")||t.includes("hey")){
-        var greetings=["Hey! What can I help with today?","Hi there! Ready to assist.","Hello! Want me to check your pantry or suggest a meal?"];
-        r=greetings[Math.floor(Math.random()*greetings.length)];
-      }
-      else if(t.includes("thanks")||t.includes("thank you")){r="You're welcome! Anything else?";}
-      else if(t.includes("who are you")||t.includes("what are you")){r="I'm Robin — your household assistant. I manage pantry, meals, routines, and smart home. I learn from our conversations to get better over time.";}
-      // Fallback — learn from it
-      else{
-        r="I'm not sure how to help with that yet. You can teach me! Say \"remember [phrase] means [what to do]\" and I'll learn it for next time.";
-        // Log unknown command for future learning
-        if(!mem.unknown)mem.unknown=[];
-        mem.unknown.push({text:t,time:Date.now()});
-      }
-    }
-
-    // Proactive follow-up based on time
-    var recentCount=mem.history.filter(function(h){return Date.now()-h.time<300000;}).length;
-    if(recentCount>3&&!mem.context){
-      r+="\n\nBy the way — is there anything you'd like me to automate? I notice we chat often about similar things.";
-    }
-
-    addMsg("robin",r);
-    mem.history.push({role:"robin",text:r,time:Date.now()});
-    try{localStorage.setItem("robin_memory",JSON.stringify(mem));}catch(e){}
-
-    // Execute action
-    if(action){
-      if(action.type==="url")setTimeout(function(){window.location.href=action.url;},1000);
-      else if(action.type==="navigate")window.dispatchEvent(new CustomEvent("robin-navigate",{detail:action.detail}));
-      else if(action.type==="theme")window.dispatchEvent(new CustomEvent("robin-theme",{detail:action.detail}));
-    }
-  },400);
-}
 
 // Load memory from localStorage on init
 try{var saved=localStorage.getItem("robin_memory");if(saved)window._robinMemory=JSON.parse(saved);}catch(e){}
 
 document.body.appendChild(root);
 render();
+
+})();
 
 // Dark mode sync across ALL pages
 (function syncDarkMode(){
