@@ -39,7 +39,7 @@ import {
   type AlexaConnection,
   type AlexaOrderRule,
 } from "@/services/alexa";
-import { SousChefChat } from "@/components/SousChefChat";
+// Robin widget is now a standalone global script (/robin-widget.js)
 
 type NavTab = "menu" | "inventory" | "routine" | "events" | "homepulse";
 
@@ -223,11 +223,9 @@ export default function App() {
         {activeNav === "inventory" && <InventoryPage items={filteredItems} allItems={items} activeCategory={activeCategory} onCategoryChange={setActiveCategory} onAddToCart={addToCart} onToggleAutoReorder={toggleAutoReorder} />}
         {activeNav === "routine" && <RoutinePage routines={routines} onUpdate={updateRoutine} onAdd={addRoutine} />}
         {activeNav === "events" && <AlexaPage connection={alexaConn} rules={alexaRules} onToggleRule={toggleAlexaRule} onUpdateConnection={updateAlexaConn} onTriggerOrder={triggerAlexaOrder} />}
-        {activeNav === "homepulse" && <HomePulsePage />}
       </main>
 
-      {/* Sous Chef */}
-      <SousChefChat lowStockCount={items.filter((i) => i.urgency === "critical").length} robinSleepTimeout={preferences.robinSleepTimeout} robinVoiceEnabled={preferences.robinVoiceEnabled} voiceKey={preferences.voiceActivationKey} />
+      {/* Robin widget is now loaded globally via /robin-widget.js */}
 
       {/* Bottom nav — Alexa device style */}
       <nav className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/95 px-4 py-2 backdrop-blur-xl">
@@ -248,10 +246,10 @@ export default function App() {
             </button>
           ))}
           {/* HomePulse button */}
-          <button onClick={() => setActiveNav("homepulse")} className={cn("flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition-all", activeNav === "homepulse" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground")}>
+          <a href="/dashboard/index.html" className="flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-all">
             <img src="/homepulse-icon.png" alt="HomePulse" className="h-6 w-6 rounded-full object-cover" />
-            <span className={cn("font-medium", activeNav === "homepulse" && "text-primary")}>HomePulse</span>
-          </button>
+            <span className="font-medium">HomePulse</span>
+          </a>
         </div>
       </nav>
     </div>
@@ -757,66 +755,6 @@ function ToggleRow({ label, description, checked, onChange }: { label: string; d
         role="switch" aria-checked={checked} aria-label={label}>
         <span className={cn("absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform", checked ? "left-[22px]" : "left-0.5")} />
       </button>
-    </div>
-  );
-}
-
-
-/* ─── HomePulse Dashboard Page ─── */
-function HomePulsePage() {
-  const [, setDetailView] = useState<string | null>(null);
-
-  const categories = [
-    { id: "energy", name: "Energy Consumption", status: "watch", onTarget: "2/3", metrics: [{label:"Monthly Usage",value:"342 kWh",target:"300 kWh",color:"#ff9800"},{label:"Solar Generation",value:"128 kWh",target:"100 kWh",color:"#4caf50"},{label:"Cost This Month",value:"$89.40",target:"$75.00",color:"#f44336"}] },
-    { id: "grocery", name: "Grocery & Food", status: "good", onTarget: "3/3", metrics: [{label:"Monthly Spend",value:"$487",target:"$550",color:"#4caf50"},{label:"Items Tracked",value:"29",target:"25",color:"#4caf50"},{label:"Waste Rate",value:"4.2%",target:"8%",color:"#4caf50"}] },
-    { id: "cleaning", name: "Cleaning Supplies", status: "watch", onTarget: "1/3", metrics: [{label:"Items In Stock",value:"14",target:"20",color:"#ff9800"},{label:"Running Low",value:"3",target:"0",color:"#f44336"},{label:"Next Order",value:"5 days",target:"7 days",color:"#4caf50"}] },
-    { id: "security", name: "Security Feed", status: "good", onTarget: "3/3", metrics: [{label:"Cameras Online",value:"4/4",target:"4",color:"#4caf50"},{label:"Motion Events",value:"2",target:"10",color:"#4caf50"},{label:"Storage Used",value:"67%",target:"85%",color:"#4caf50"}] },
-    { id: "smart-devices", name: "Smart Devices", status: "good", onTarget: "3/3", metrics: [{label:"Connected",value:"18",target:"18",color:"#4caf50"},{label:"Firmware Updates",value:"2 pending",target:"0",color:"#ff9800"},{label:"Uptime",value:"99.9%",target:"99.5%",color:"#4caf50"}] },
-  ];
-
-  // Sort by severity
-  const sorted = [...categories].sort((a, b) => {
-    const p = { risk: 0, watch: 1, good: 2 };
-    return (p[a.status as keyof typeof p] ?? 2) - (p[b.status as keyof typeof p] ?? 2);
-  });
-
-  const statusColors = { risk: "#f44336", watch: "#ff9800", good: "#4caf50" };
-  const statusBg = { risk: "rgba(244,67,54,0.05)", watch: "rgba(255,152,0,0.05)", good: "rgba(76,175,80,0.05)" };
-  const statusLabels = { risk: "AT RISK", watch: "AT RISK", good: "GOOD" };
-
-  return (
-    <div className="space-y-3">
-      <h2 className="text-lg font-bold">HomePulse Dashboard</h2>
-      <p className="text-sm text-muted-foreground">Household metrics — sorted by priority</p>
-
-      {sorted.map((cat) => (
-        <div
-          key={cat.id}
-          className="rounded-2xl border border-border p-4 cursor-pointer hover:shadow-md transition-shadow"
-          style={{ borderLeftWidth: "5px", borderLeftColor: statusColors[cat.status as keyof typeof statusColors], background: statusBg[cat.status as keyof typeof statusBg] }}
-          onClick={() => setDetailView(cat.id)}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm">{cat.name}</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: statusColors[cat.status as keyof typeof statusColors], color: "#fff" }}>
-                {statusLabels[cat.status as keyof typeof statusLabels]}
-              </span>
-              <span className="text-xs text-muted-foreground">{cat.onTarget} on target</span>
-            </div>
-            <span className="text-xs text-primary font-medium">View Details →</span>
-          </div>
-          <div className="flex gap-6">
-            {cat.metrics.map((m, i) => (
-              <div key={i} className="text-xs">
-                <span className="text-muted-foreground">{m.label}: </span>
-                <span style={{ color: m.color }} className="font-semibold">{m.value}</span>
-                <span className="text-muted-foreground">/{m.target}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

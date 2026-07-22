@@ -23,6 +23,7 @@
     "radix-ui": "^1.6.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.1",
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
