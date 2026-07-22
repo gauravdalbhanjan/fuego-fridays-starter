@@ -154,10 +154,118 @@ function renderMsg(role,text){
 function sendMsg(){
   var inp=document.getElementById("rw-chat-input");var text=inp.value.trim();if(!text)return;
   addMsg("user",text);inp.value="";
-  // Store in conversation memory
   if(!window._robinMemory)window._robinMemory={history:[],learned:{},preferences:{},context:null};
   var mem=window._robinMemory;
   mem.history.push({role:"user",text:text,time:Date.now()});
+  try{localStorage.setItem("robin_memory",JSON.stringify(mem));}catch(e){}
+
+  // Knowledge base - Robin knows the app data
+  var KNOWLEDGE={
+    lowStock:["Spinach","Broccoli","Apple","Banana","Oranges","Chicken Breast","Eggs","Sourdough","Whole Milk","Bagels","Orange Juice"],
+    categories:["Veggies","Fruits","Meat","Staples","Breads","Dairy","Beverages"],
+    meals:["Caesar Salad","Bundt Cake","Chicken Strips","Agliolio Spaghetti","Caesar Wrap","Bacon Ham Sandwich","Guacamole","Chicken Stir Fry","Poha Bowl","Veggie Omelette","Grilled Salmon","Banana Smoothie","Pasta Bolognese","Avocado Toast","Chicken Burger","French Fries"],
+    energy:{usage:"342 kWh",cost:"$89.40",solar:"128 kWh"},
+    cleaning:{low:["Laundry Detergent","Glass Cleaner","Sponges"],stock:14},
+    security:{cameras:4,events:2,storage:"67%"},
+    devices:{connected:18,updates:2,uptime:"99.9%"}
+  };
+
+  setTimeout(function(){
+    var t=text.toLowerCase(),r="",action=null;
+
+    // Check learned commands first
+    for(var key in mem.learned){if(t.includes(key)){r=mem.learned[key].response;action=mem.learned[key].action;break;}}
+
+    if(!r){
+      // CONTEXTUAL UNDERSTANDING - ingredients, running out, what do I need
+      if(t.includes("running out")||t.includes("running low")||t.includes("low on")||t.includes("need to buy")||t.includes("ingredient")||t.includes("what am i running")||t.includes("what's running")||t.includes("almost out")||t.includes("about to run out")||t.includes("need to restock")||t.includes("what do i need")){
+        r="You're running low on: "+KNOWLEDGE.lowStock.join(", ")+". That's "+KNOWLEDGE.lowStock.length+" items that need restocking soon. Want me to add them to your cart?";
+        mem.context="confirm_order";
+      }
+      else if(t.includes("what do i have")||t.includes("what's in")||t.includes("pantry status")||t.includes("inventory status")||t.includes("what's available")||t.includes("in my kitchen")||t.includes("what food")){
+        r="Your pantry has items across "+KNOWLEDGE.categories.length+" categories: "+KNOWLEDGE.categories.join(", ")+". "+KNOWLEDGE.lowStock.length+" items are running low. Want me to show the full inventory?";
+        mem.context="show_inventory";
+      }
+      else if(t.includes("what can i cook")||t.includes("what can i make")||t.includes("recipe")||t.includes("meal suggestion")||t.includes("suggest something")||t.includes("hungry")||t.includes("what to eat")||t.includes("dinner idea")||t.includes("lunch idea")||t.includes("breakfast idea")){
+        var available=KNOWLEDGE.meals.slice(0,5);
+        r="Based on what's in stock, you can make: "+available.join(", ")+". Want me to open the menu with all options?";
+        mem.context="suggesting_meal";
+      }
+      else if(t.includes("how much")||t.includes("cost")||t.includes("spend")||t.includes("budget")||t.includes("expensive")){
+        if(t.includes("energy")||t.includes("electric")){r="Energy cost this month: "+KNOWLEDGE.energy.cost+" (above $75 target). Usage: "+KNOWLEDGE.energy.usage+". Want to see the breakdown?";}
+        else if(t.includes("grocery")||t.includes("food")){r="Grocery spend this month: $487 across 29 items. That's up 5.2% from last month. Want details?";}
+        else{r="Here's your spending: Energy "+KNOWLEDGE.energy.cost+", Groceries $487, Cleaning $34. Which one do you want to dig into?";}
+        mem.context="cost_details";
+      }
+      else if(t.includes("energy")||t.includes("electricity")||t.includes("power")||t.includes("kwh")||t.includes("solar")||t.includes("bill")){
+        r="Your energy this month: "+KNOWLEDGE.energy.usage+" used, "+KNOWLEDGE.energy.solar+" from solar, costing "+KNOWLEDGE.energy.cost+". That's above your $75 target. Want details?";
+        action={type:"url",url:"/dashboard/energy.html"};
+      }
+      else if(t.includes("cleaning")||t.includes("supplies")||t.includes("detergent")||t.includes("soap")){
+        r="Cleaning supplies: "+KNOWLEDGE.cleaning.stock+" items in stock. Running low on: "+KNOWLEDGE.cleaning.low.join(", ")+". Next auto-order in 5 days.";
+        action={type:"url",url:"/dashboard/cleaning.html"};
+      }
+      else if(t.includes("security")||t.includes("camera")||t.includes("motion")){
+        r="Security: All "+KNOWLEDGE.security.cameras+" cameras online. "+KNOWLEDGE.security.events+" motion events today. Storage at "+KNOWLEDGE.security.storage+".";
+        action={type:"url",url:"/dashboard/security.html"};
+      }
+      else if(t.includes("device")||t.includes("smart home")||t.includes("connected")){
+        r=KNOWLEDGE.devices.connected+" devices connected, uptime "+KNOWLEDGE.devices.uptime+". "+KNOWLEDGE.devices.updates+" firmware updates pending.";
+        action={type:"url",url:"/dashboard/smart-devices.html"};
+      }
+      // Navigation
+      else if(t.includes("menu")||t.includes("cook")||t.includes("food")){r="Opening menu!";action={type:"navigate",detail:"menu"};}
+      else if(t.includes("inventory")||t.includes("pantry")||t.includes("stock")){r="Opening inventory.";action={type:"navigate",detail:"inventory"};}
+      else if(t.includes("routine")||t.includes("schedule")){r="Opening routine.";action={type:"navigate",detail:"routine"};}
+      else if(t.includes("alexa")||t.includes("order")){r="Opening orders.";action={type:"navigate",detail:"events"};}
+      else if(t.includes("dashboard")||t.includes("homepulse")){r="Taking you to HomePulse.";action={type:"url",url:"/dashboard/index.html"};}
+      else if(t.includes("grocery")&&t.includes("detail")){r="Opening grocery details.";action={type:"url",url:"/dashboard/grocery.html"};}
+      // Theme
+      else if(t.includes("dark mode")||t.includes("dark theme")||t.includes("dark")){r="Switched to dark mode.";action={type:"theme",detail:"dark"};}
+      else if(t.includes("light mode")||t.includes("light theme")||t.includes("light")){r="Switched to light mode.";action={type:"theme",detail:"light"};}
+      // Settings
+      else if(t.includes("setting")){r="Opening settings.";action={type:"navigate",detail:"settings"};}
+      // Learning
+      else if(t.startsWith("remember")||t.startsWith("learn")){
+        var parts=t.replace(/^(remember|learn)\s+(that\s+)?/i,"").split(" means ");
+        if(parts.length===2){mem.learned[parts[0].trim()]={response:"Got it! "+parts[1].trim(),action:null};r='Learned! I\'ll remember "'+parts[0].trim()+'".';}
+        else{r='Teach me: "remember [phrase] means [action]"';}
+      }
+      // Preferences
+      else if(t.includes("i like")||t.includes("i prefer")){var pref=t.replace(/^(i like|i prefer)\s*/i,"");mem.preferences[Date.now()]=pref;r="Noted! I'll remember you like "+pref+".";}
+      else if(t.includes("i don't like")||t.includes("i hate")){var dis=t.replace(/^(i don't like|i hate)\s*/i,"");mem.preferences["dislike_"+Date.now()]=dis;r="Got it, avoiding "+dis+".";}
+      // Confirmations
+      else if(t.includes("yes")||t.includes("sure")||t.includes("yeah")||t.includes("ok")){
+        if(mem.context==="suggesting_meal"){r="Opening menu with available dishes!";action={type:"navigate",detail:"menu"};}
+        else if(mem.context==="confirm_order"){r="Adding low-stock items to your cart!";}
+        else if(mem.context==="show_inventory"){r="Opening inventory now.";action={type:"navigate",detail:"inventory"};}
+        else{r="What would you like me to do?";}
+        mem.context=null;
+      }
+      else if(t.includes("no")||t.includes("nah")||t.includes("not now")){r="No problem!";mem.context=null;}
+      // Greetings
+      else if(t.includes("hi")||t.includes("hello")||t.includes("hey")){var g=["Hey! What can I help with?","Hi! Ready to assist.","Hello! Check pantry or suggest a meal?"];r=g[Math.floor(Math.random()*g.length)];}
+      else if(t.includes("thanks")||t.includes("thank")){r="You're welcome! Anything else?";}
+      else if(t.includes("who are you")){r="I'm Robin \u2014 your household AI. I know your pantry, meals, routines, energy, security, and smart devices. Ask me anything!";}
+      // Fallback with context awareness
+      else{
+        r="I'm not sure about \""+text+"\". I can help with: pantry status, meal suggestions, energy/cleaning/security data, dark mode, navigation, or teach me new commands.";
+        if(!mem.unknown)mem.unknown=[];
+        mem.unknown.push({text:t,time:Date.now()});
+      }
+    }
+
+    addMsg("robin",r);
+    mem.history.push({role:"robin",text:r,time:Date.now()});
+    try{localStorage.setItem("robin_memory",JSON.stringify(mem));}catch(e){}
+
+    if(action){
+      if(action.type==="url")setTimeout(function(){window.location.href=action.url;},1200);
+      else if(action.type==="navigate")window.dispatchEvent(new CustomEvent("robin-navigate",{detail:action.detail}));
+      else if(action.type==="theme")window.dispatchEvent(new CustomEvent("robin-theme",{detail:action.detail}));
+    }
+  },400);
+}
   // Save to localStorage
   try{localStorage.setItem("robin_memory",JSON.stringify(mem));}catch(e){}
   setTimeout(function(){
@@ -271,7 +379,30 @@ try{var saved=localStorage.getItem("robin_memory");if(saved)window._robinMemory=
 document.body.appendChild(root);
 render();
 
-// Listen for theme changes and update chat
-window.addEventListener("robin-theme",function(){setTimeout(applyTheme,100);});
-new MutationObserver(function(){applyTheme();}).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
+// Dark mode sync across ALL pages
+(function syncDarkMode(){
+  // Apply saved theme on load
+  var savedTheme=localStorage.getItem("robin_theme");
+  if(savedTheme==="dark"){
+    document.documentElement.classList.add("dark");
+    document.body.classList.add("dark-mode");
+  }else if(savedTheme==="light"){
+    document.documentElement.classList.remove("dark");
+    document.body.classList.remove("dark-mode");
+  }
+  // Listen for theme toggle events
+  window.addEventListener("robin-theme",function(e){
+    var mode=e.detail;
+    localStorage.setItem("robin_theme",mode);
+    if(mode==="dark"){document.documentElement.classList.add("dark");document.body.classList.add("dark-mode");}
+    else{document.documentElement.classList.remove("dark");document.body.classList.remove("dark-mode");}
+    setTimeout(applyTheme,50);
+  });
+
+  // Apply saved theme on page load (syncs across all pages)
+  var savedTheme=localStorage.getItem("robin_theme");
+  if(savedTheme==="dark"){document.documentElement.classList.add("dark");document.body.classList.add("dark-mode");}
+  else if(savedTheme==="light"){document.documentElement.classList.remove("dark");document.body.classList.remove("dark-mode");}
+
+  new MutationObserver(function(){applyTheme();}).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
 })();
