@@ -359,6 +359,40 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [didDrag, setDidDrag] = useState(false);
+  const [callState, setCallState] = useState<"idle" | "active" | "hold" | "ending">("idle");
+  const callLongPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Call button handlers
+  const handleCallClick = useCallback(() => {
+    if (didDrag) return;
+    if (callState === "idle") {
+      // Start call — green, mic on
+      setCallState("active");
+      listenForOneCommand();
+    } else if (callState === "active") {
+      // Put on hold — yellow
+      setCallState("hold");
+    } else if (callState === "hold") {
+      // Resume — green again
+      setCallState("active");
+      listenForOneCommand();
+    }
+  }, [didDrag, callState, listenForOneCommand]);
+
+  const handleCallLongPressStart = useCallback(() => {
+    callLongPressRef.current = setTimeout(() => {
+      // End call — red for 3 seconds then reset
+      setCallState("ending");
+      setTimeout(() => setCallState("idle"), 3000);
+    }, 600);
+  }, []);
+
+  const handleCallLongPressEnd = useCallback(() => {
+    if (callLongPressRef.current) {
+      clearTimeout(callLongPressRef.current);
+      callLongPressRef.current = null;
+    }
+  }, []);
 
   if (!isOpen) {
     return (
@@ -418,9 +452,27 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
               <svg className="h-5 w-5 text-[#222] dark:text-[#ddd]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
               <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Type</span>
             </button>
-            <button onClick={() => { if (!didDrag) listenForOneCommand(); }} title="Call" className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-[#c0c0c0] dark:bg-[#3a3a3a] hover:bg-[#aaa] dark:hover:bg-[#4a4a4a] transition-colors">
-              <svg className="h-5 w-5 text-[#222] dark:text-[#ddd]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>
-              <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Call</span>
+            <button
+              onClick={handleCallClick}
+              onPointerDown={handleCallLongPressStart}
+              onPointerUp={handleCallLongPressEnd}
+              onPointerLeave={handleCallLongPressEnd}
+              title="Call"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-full transition-all"
+              style={{
+                background: callState === "active" ? "#bbf7d0" : callState === "hold" ? "#fef3c7" : callState === "ending" ? "#fecaca" : "#c0c0c0",
+              }}
+            >
+              {callState === "ending" ? (
+                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /><line x1="4" y1="4" x2="20" y2="20" /></svg>
+              ) : callState === "hold" ? (
+                <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+              ) : (
+                <svg className={cn("h-5 w-5", callState === "active" ? "text-green-700" : "text-[#222] dark:text-[#ddd]")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>
+              )}
+              <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                {callState === "active" ? "On Call" : callState === "hold" ? "On Hold" : callState === "ending" ? "Ending..." : "Call"}
+              </span>
             </button>
             <button title="Share Screen" className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-[#c0c0c0] dark:bg-[#3a3a3a] hover:bg-[#aaa] dark:hover:bg-[#4a4a4a] transition-colors">
               <svg className="h-5 w-5 text-[#222] dark:text-[#ddd]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /><path d="M17 8l-5 5-5-5" strokeLinecap="round" /></svg>
