@@ -62,23 +62,93 @@ function toggleChat(){
   chatOpen=!chatOpen;
   var panel=document.getElementById("rw-chat-panel");
   if(chatOpen){
-    if(!panel){
-      panel=document.createElement("div");
-      panel.id="rw-chat-panel";
-      panel.style.cssText="position:fixed;bottom:80px;right:16px;z-index:99998;width:360px;max-width:calc(100vw - 32px);height:350px;background:#fff;border:1px solid #ddd;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;";
-      panel.innerHTML='<div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><img src="/chef-logo.png" style="width:28px;height:28px;border-radius:8px;object-fit:cover;"/><span style="font-weight:600;font-size:14px;">Robin</span><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span></div><button id="rw-chat-close" style="border:none;background:none;cursor:pointer;font-size:18px;color:#888;">&#10005;</button></div><div id="rw-chat-messages" style="flex:1;overflow-y:auto;padding:12px 16px;font-size:13px;"></div><div style="padding:10px 12px;border-top:1px solid #eee;display:flex;gap:8px;"><input id="rw-chat-input" type="text" placeholder="Type a message..." style="flex:1;border:1px solid #ddd;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;"/><button id="rw-chat-send" style="border:none;background:#1a73e8;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>';
-      document.body.appendChild(panel);
-      addMsg("robin","Hey! I\u2019m Robin. How can I help?");
-      document.getElementById("rw-chat-close").onclick=function(){toggleChat();};
-      document.getElementById("rw-chat-send").onclick=sendMsg;
-      document.getElementById("rw-chat-input").onkeydown=function(e){if(e.key==="Enter")sendMsg();};
-    }else{panel.style.display="flex";}
+    if(!panel){buildChatPanel();}
+    else{panel.style.display="flex";applyTheme();}
+    loadCurrentSession();
   }else{if(panel)panel.style.display="none";}
 }
-function addMsg(role,text){
+
+function isDark(){return document.documentElement.classList.contains("dark")||document.body.classList.contains("dark-mode");}
+
+function applyTheme(){
+  var panel=document.getElementById("rw-chat-panel");if(!panel)return;
+  var dark=isDark();
+  panel.style.background=dark?"#1a1a2e":"#fff";
+  panel.style.borderColor=dark?"#333":"#ddd";
+  panel.style.color=dark?"#e6edf3":"#1a2332";
+  var msgs=document.getElementById("rw-chat-messages");if(msgs)msgs.style.background=dark?"#0d1117":"#fff";
+  var inp=document.getElementById("rw-chat-input");
+  if(inp){inp.style.background=dark?"#161b22":"#fff";inp.style.color=dark?"#e6edf3":"#333";inp.style.borderColor=dark?"#30363d":"#ddd";}
+}
+
+function buildChatPanel(){
+  var panel=document.createElement("div");
+  panel.id="rw-chat-panel";
+  panel.style.cssText="position:fixed;bottom:80px;right:16px;z-index:99998;width:380px;max-width:calc(100vw - 32px);height:420px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);display:flex;flex-direction:column;overflow:hidden;border:1px solid #ddd;background:#fff;";
+  panel.innerHTML='<div id="rw-header" style="padding:10px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><img src="/chef-logo.png" style="width:26px;height:26px;border-radius:8px;object-fit:cover;"/><span style="font-weight:600;font-size:13px;">Robin</span><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span></div><div style="display:flex;gap:6px;"><button id="rw-sessions-btn" title="Chat History" style="border:none;background:none;cursor:pointer;font-size:14px;opacity:0.6;">&#128196;</button><button id="rw-new-chat" title="New Chat" style="border:none;background:none;cursor:pointer;font-size:14px;opacity:0.6;">&#10010;</button><button id="rw-chat-close" style="border:none;background:none;cursor:pointer;font-size:16px;opacity:0.6;">&#10005;</button></div></div><div id="rw-chat-messages" style="flex:1;overflow-y:auto;padding:12px 16px;font-size:13px;"></div><div style="padding:8px 12px;border-top:1px solid #eee;display:flex;gap:8px;"><input id="rw-chat-input" type="text" placeholder="Type a message..." style="flex:1;border:1px solid #ddd;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;"/><button id="rw-chat-send" style="border:none;background:#1a73e8;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>';
+  document.body.appendChild(panel);
+  document.getElementById("rw-chat-close").onclick=function(){toggleChat();};
+  document.getElementById("rw-chat-send").onclick=sendMsg;
+  document.getElementById("rw-chat-input").onkeydown=function(e){if(e.key==="Enter")sendMsg();};
+  document.getElementById("rw-new-chat").onclick=startNewSession;
+  document.getElementById("rw-sessions-btn").onclick=showSessions;
+  applyTheme();
+}
+
+// Session management
+function getSessions(){try{return JSON.parse(localStorage.getItem("robin_sessions")||"[]");}catch(e){return[];}}
+function saveSessions(s){try{localStorage.setItem("robin_sessions",JSON.stringify(s));}catch(e){}}
+function getCurrentSessionId(){return localStorage.getItem("robin_current_session")||null;}
+function setCurrentSessionId(id){localStorage.setItem("robin_current_session",id);}
+
+function loadCurrentSession(){
+  var sessions=getSessions();
+  var id=getCurrentSessionId();
+  var session=sessions.find(function(s){return s.id===id;});
+  if(!session){session={id:"s_"+Date.now(),messages:[{role:"robin",text:"Hey! I\u2019m Robin. How can I help?"}],created:Date.now()};sessions.push(session);saveSessions(sessions);setCurrentSessionId(session.id);}
   var c=document.getElementById("rw-chat-messages");if(!c)return;
+  c.innerHTML="";
+  session.messages.forEach(function(m){renderMsg(m.role,m.text);});
+  c.scrollTop=c.scrollHeight;
+}
+
+function startNewSession(){
+  var session={id:"s_"+Date.now(),messages:[{role:"robin",text:"New conversation started. What can I do for you?"}],created:Date.now()};
+  var sessions=getSessions();sessions.push(session);saveSessions(sessions);setCurrentSessionId(session.id);
+  loadCurrentSession();
+}
+
+function showSessions(){
+  var c=document.getElementById("rw-chat-messages");if(!c)return;
+  var sessions=getSessions();
+  c.innerHTML="<div style='font-size:12px;font-weight:600;margin-bottom:8px;opacity:0.6;'>CHAT HISTORY</div>";
+  if(sessions.length===0){c.innerHTML+="<div style='font-size:12px;opacity:0.5;'>No sessions yet.</div>";return;}
+  sessions.slice().reverse().forEach(function(s){
+    var d=document.createElement("div");
+    var preview=s.messages.length>1?s.messages[s.messages.length-1].text.substring(0,40)+"...":"Empty";
+    var date=new Date(s.created).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+    var isActive=s.id===getCurrentSessionId();
+    d.style.cssText="padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:6px;border:1px solid "+(isActive?"#1a73e8":"#eee")+";background:"+(isActive?"#e8f0fe":"transparent")+";";
+    d.innerHTML="<div style='font-size:12px;font-weight:500;'>"+date+"</div><div style='font-size:11px;opacity:0.6;margin-top:2px;'>"+preview+"</div>";
+    d.onclick=function(){setCurrentSessionId(s.id);loadCurrentSession();};
+    c.appendChild(d);
+  });
+}
+
+function addMsg(role,text){
+  renderMsg(role,text);
+  // Save to current session
+  var sessions=getSessions();var id=getCurrentSessionId();
+  var session=sessions.find(function(s){return s.id===id;});
+  if(session){session.messages.push({role:role,text:text});saveSessions(sessions);}
+}
+
+function renderMsg(role,text){
+  var c=document.getElementById("rw-chat-messages");if(!c)return;
+  var dark=isDark();
   var d=document.createElement("div");
-  d.style.cssText=role==="robin"?"margin-bottom:10px;padding:8px 12px;background:#f0f4f8;border-radius:12px;border-top-left-radius:4px;max-width:85%;":"margin-bottom:10px;padding:8px 12px;background:#1a73e8;color:#fff;border-radius:12px;border-top-right-radius:4px;max-width:85%;margin-left:auto;";
+  if(role==="robin"){d.style.cssText="margin-bottom:10px;padding:8px 12px;background:"+(dark?"#1c2333":"#f0f4f8")+";border-radius:12px;border-top-left-radius:4px;max-width:85%;color:"+(dark?"#e6edf3":"#333")+";";}
+  else{d.style.cssText="margin-bottom:10px;padding:8px 12px;background:#1a73e8;color:#fff;border-radius:12px;border-top-right-radius:4px;max-width:85%;margin-left:auto;";}
   d.textContent=text;c.appendChild(d);c.scrollTop=c.scrollHeight;
 }
 function sendMsg(){
@@ -200,4 +270,8 @@ try{var saved=localStorage.getItem("robin_memory");if(saved)window._robinMemory=
 
 document.body.appendChild(root);
 render();
+
+// Listen for theme changes and update chat
+window.addEventListener("robin-theme",function(){setTimeout(applyTheme,100);});
+new MutationObserver(function(){applyTheme();}).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
 })();
