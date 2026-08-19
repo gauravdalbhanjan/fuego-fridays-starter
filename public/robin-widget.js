@@ -56,7 +56,7 @@ function listen(){
       var t=ft.toLowerCase();
       console.log("[Robin] Heard:",t);
       processVoice(t);
-      transcript="";callState="idle";render();
+      transcript="";render();
     }
   };
   rec.onerror=function(){if(callState==="active")setTimeout(listen,500);};
