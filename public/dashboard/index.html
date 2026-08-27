@@ -524,7 +524,7 @@
 <body>
     <!-- App Bar -->
     <div class="app-bar">
-        <a href="/" class="material-icons app-icon" style="color:#fff;text-decoration:none;">apps</a>
+        <a href="../" class="material-icons app-icon" style="color:#fff;text-decoration:none;">apps</a>
         <span class="app-title">Menu</span>
         <div class="spacer"></div>
         <div class="toolbar-icons">
@@ -552,7 +552,7 @@
             <div id="favoritesList">
             <div class="nav-sub-item" data-fav="energy">Energy</div>
             <div class="nav-sub-item" data-fav="security">Security</div>
-            <div class="nav-sub-item" data-fav="pantry" onclick="window.location.href='/'" style="cursor:pointer;">PantryPilot</div>
+            <div class="nav-sub-item" data-fav="pantry" onclick="window.location.href='../'" style="cursor:pointer;">PantryPilot</div>
             </div>
 
             <div class="nav-section-header">
@@ -1807,11 +1807,11 @@
 
         // Wire up "View Details" links to category pages
         const detailLinks = {
-            'energy': '/dashboard/energy.html',
-            'grocery': '/dashboard/grocery.html',
-            'cleaning': '/dashboard/cleaning.html',
-            'security': '/dashboard/security.html',
-            'smart-devices': '/dashboard/smart-devices.html'
+            'energy': 'energy.html',
+            'grocery': 'grocery.html',
+            'cleaning': 'cleaning.html',
+            'security': 'security.html',
+            'smart-devices': 'smart-devices.html'
         };
         document.querySelectorAll('.product-row').forEach(row => {
             const product = row.getAttribute('data-product');
@@ -1878,6 +1878,6 @@
         sortProductRows();
 
     </script>
-<script src="/robin-widget.js"></script></body>
+<script src="../robin-widget.js"></script></body>
 </html>
 

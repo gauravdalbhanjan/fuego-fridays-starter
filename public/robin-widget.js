@@ -2,6 +2,23 @@
 "use strict";
 if(document.getElementById("robin-widget-root"))return;
 
+// Resolve the deploy base (e.g. "/fuego-fridays-starter/" on GitHub Pages, or
+// "/" locally) from this script's own URL so all asset/page links work under
+// any sub-path. currentScript is available while the script is executing.
+var BASE=(function(){
+  try{
+    var s=document.currentScript&&document.currentScript.src;
+    if(s){
+      var u=new URL(s);
+      // strip the trailing "robin-widget.js" to get the directory it lives in
+      return u.pathname.replace(/robin-widget\.js.*$/,"");
+    }
+  }catch(e){}
+  return "/";
+})();
+// Build an absolute-from-base URL: RA("/chef-logo.png") -> "/fuego-fridays-starter/chef-logo.png"
+function RA(p){ if(!p||p.charAt(0)!=="/")return p; return BASE.replace(/\/$/,"")+p; }
+
 var callState="idle";
 var chatOpen=false;
 var transcript="";
@@ -18,7 +35,7 @@ function render(){
   var dot=callState==="active"?"#22c55e":callState==="hold"?"#f59e0b":callState==="ending"?"#ef4444":"#666";
   var showTranscript=(callState==="active"&&transcript);
   var html='<div id="rw-logo" style="position:relative;margin:0 auto;width:150px;height:150px;border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.35);cursor:pointer;border:2px solid rgba(255,255,255,0.12);">';
-  html+='<img src="/chef-logo.png" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" draggable="false"/>';
+  html+='<img src="'+RA("/chef-logo.png")+'" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" draggable="false"/>';
   html+='<span style="position:absolute;top:10px;right:10px;width:12px;height:12px;border-radius:50%;background:'+dot+';border:2px solid rgba(0,0,0,0.25);box-shadow:0 0 8px '+dot+';"></span>';
   html+='</div>';
   html+='<div style="margin:8px auto 0;display:flex;justify-content:center;gap:8px;background:rgba(200,200,200,0.9);backdrop-filter:blur(8px);border-radius:28px;padding:8px 14px;width:fit-content;box-shadow:0 2px 10px rgba(0,0,0,0.1);">';
@@ -131,14 +148,14 @@ function listen(){
 }
 
 function processVoice(t){
-  if(t.includes("dashboard")||t.includes("homepulse"))window.location.href="/dashboard/index.html";
-  else if(t.includes("energy"))window.location.href="/dashboard/energy.html";
-  else if(t.includes("grocery"))window.location.href="/dashboard/grocery.html";
-  else if(t.includes("clean"))window.location.href="/dashboard/cleaning.html";
-  else if(t.includes("security")||t.includes("camera"))window.location.href="/dashboard/security.html";
-  else if(t.includes("smart")||t.includes("device"))window.location.href="/dashboard/smart-devices.html";
-  else if(t.includes("pantry")||t.includes("menu")||t.includes("food")||t.includes("cook"))window.location.href="/";
-  else if(t.includes("inventory")||t.includes("running out")||t.includes("running low")||t.includes("ingredient")){window.location.href="/";setTimeout(function(){window.dispatchEvent(new CustomEvent("robin-navigate",{detail:"inventory"}));},500);}
+  if(t.includes("dashboard")||t.includes("homepulse"))window.location.href=RA("/dashboard/index.html");
+  else if(t.includes("energy"))window.location.href=RA("/dashboard/energy.html");
+  else if(t.includes("grocery"))window.location.href=RA("/dashboard/grocery.html");
+  else if(t.includes("clean"))window.location.href=RA("/dashboard/cleaning.html");
+  else if(t.includes("security")||t.includes("camera"))window.location.href=RA("/dashboard/security.html");
+  else if(t.includes("smart")||t.includes("device"))window.location.href=RA("/dashboard/smart-devices.html");
+  else if(t.includes("pantry")||t.includes("menu")||t.includes("food")||t.includes("cook"))window.location.href=RA("/");
+  else if(t.includes("inventory")||t.includes("running out")||t.includes("running low")||t.includes("ingredient")){window.location.href=RA("/");setTimeout(function(){window.dispatchEvent(new CustomEvent("robin-navigate",{detail:"inventory"}));},500);}
   else if(t.includes("routine")||t.includes("schedule"))window.dispatchEvent(new CustomEvent("robin-navigate",{detail:"routine"}));
   else if(t.includes("light mode"))window.dispatchEvent(new CustomEvent("robin-theme",{detail:"light"}));
   else if(t.includes("dark mode"))window.dispatchEvent(new CustomEvent("robin-theme",{detail:"dark"}));
@@ -159,7 +176,7 @@ function buildChat(){
   var panel=document.createElement("div");
   panel.id="rw-chat-panel";
   panel.style.cssText="position:fixed;bottom:80px;right:16px;z-index:99998;width:380px;max-width:calc(100vw - 32px);height:400px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);display:flex;flex-direction:column;overflow:hidden;border:1px solid #333;background:#1a1a2e;color:#e6edf3;";
-  panel.innerHTML='<div style="padding:10px 16px;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><img src="/chef-logo.png" style="width:24px;height:24px;border-radius:6px;object-fit:cover;"/><span style="font-weight:600;font-size:13px;">Robin</span><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span></div><div style="display:flex;gap:6px;"><button id="rw-sessions-btn" title="History" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#128196;</button><button id="rw-new-chat" title="New Chat" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#10010;</button><button id="rw-chat-close" style="border:none;background:none;cursor:pointer;font-size:15px;opacity:0.6;color:inherit;">&#10005;</button></div></div><div id="rw-msgs" style="flex:1;overflow-y:auto;padding:12px 16px;font-size:13px;"></div><div style="padding:8px 12px;border-top:1px solid #333;display:flex;gap:8px;align-items:center;"><button id="rw-mic" title="Speak" style="border:none;background:#2a2a3e;color:#9aa0aa;border-radius:50%;width:32px;height:32px;min-width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg></button><input id="rw-input" type="text" placeholder="Type a message..." style="flex:1;border:1px solid #444;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;background:#111;color:#fff;"/><button id="rw-send" style="border:none;background:#1a73e8;color:#fff;border-radius:50%;width:32px;height:32px;min-width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>';
+  panel.innerHTML='<div style="padding:10px 16px;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><img src="'+RA("/chef-logo.png")+'" style="width:24px;height:24px;border-radius:6px;object-fit:cover;"/><span style="font-weight:600;font-size:13px;">Robin</span><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span></div><div style="display:flex;gap:6px;"><button id="rw-sessions-btn" title="History" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#128196;</button><button id="rw-new-chat" title="New Chat" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#10010;</button><button id="rw-chat-close" style="border:none;background:none;cursor:pointer;font-size:15px;opacity:0.6;color:inherit;">&#10005;</button></div></div><div id="rw-msgs" style="flex:1;overflow-y:auto;padding:12px 16px;font-size:13px;"></div><div style="padding:8px 12px;border-top:1px solid #333;display:flex;gap:8px;align-items:center;"><button id="rw-mic" title="Speak" style="border:none;background:#2a2a3e;color:#9aa0aa;border-radius:50%;width:32px;height:32px;min-width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg></button><input id="rw-input" type="text" placeholder="Type a message..." style="flex:1;border:1px solid #444;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;background:#111;color:#fff;"/><button id="rw-send" style="border:none;background:#1a73e8;color:#fff;border-radius:50%;width:32px;height:32px;min-width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>';
   document.body.appendChild(panel);
   document.getElementById("rw-chat-close").onclick=function(){toggleChat();};
   document.getElementById("rw-send").onclick=sendMsg;
@@ -301,10 +318,10 @@ function sendMsg(){
     }else if(t.includes("menu")||t.includes("food")){r="Opening menu.";nav="menu";
     }else if(t.includes("inventory")||t.includes("pantry")||t.includes("stock")){r="Opening inventory.";nav="inventory";
     }else if(t.includes("routine")||t.includes("schedule")){r="Opening routine.";nav="routine";
-    }else if(t.includes("dashboard")||t.includes("homepulse")){r="Going to HomePulse.";setTimeout(function(){window.location.href="/dashboard/index.html";},800);
-    }else if(t.includes("energy")){r="Opening energy details.";setTimeout(function(){window.location.href="/dashboard/energy.html";},800);
-    }else if(t.includes("clean")){r="Opening cleaning.";setTimeout(function(){window.location.href="/dashboard/cleaning.html";},800);
-    }else if(t.includes("security")||t.includes("camera")){r="Opening security.";setTimeout(function(){window.location.href="/dashboard/security.html";},800);
+    }else if(t.includes("dashboard")||t.includes("homepulse")){r="Going to HomePulse.";setTimeout(function(){window.location.href=RA("/dashboard/index.html");},800);
+    }else if(t.includes("energy")){r="Opening energy details.";setTimeout(function(){window.location.href=RA("/dashboard/energy.html");},800);
+    }else if(t.includes("clean")){r="Opening cleaning.";setTimeout(function(){window.location.href=RA("/dashboard/cleaning.html");},800);
+    }else if(t.includes("security")||t.includes("camera")){r="Opening security.";setTimeout(function(){window.location.href=RA("/dashboard/security.html");},800);
     }else if(t.includes("dark mode")||t.includes("dark theme")){r="Dark mode on.";window.dispatchEvent(new CustomEvent("robin-theme",{detail:"dark"}));
     }else if(t.includes("light mode")||t.includes("light theme")){r="Light mode on.";window.dispatchEvent(new CustomEvent("robin-theme",{detail:"light"}));
     }else if(t.includes("hi")||t.includes("hello")||t.includes("hey")){r="Hey! What can I help with?";

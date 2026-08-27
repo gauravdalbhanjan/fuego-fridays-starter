@@ -10,7 +10,7 @@ import {
   Mic,
   Wifi,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, asset } from "@/lib/utils";
 import {
   GROCERY_ITEMS,
   CATEGORIES,
@@ -246,7 +246,7 @@ export default function App() {
             </button>
           ))}
           {/* HomePulse button */}
-          <a href="/dashboard/index.html" className="relative flex flex-1 flex-col items-center justify-start gap-1 rounded-2xl px-1 py-2 text-xs text-muted-foreground hover:text-foreground transition-all">
+          <a href={asset("/dashboard/index.html")} className="relative flex flex-1 flex-col items-center justify-start gap-1 rounded-2xl px-1 py-2 text-xs text-muted-foreground hover:text-foreground transition-all">
             <span className="flex h-6 items-center justify-center text-lg leading-none" role="img" aria-label="HomePulse">⚡</span>
             <span className="font-medium leading-none">HomePulse</span>
           </a>
@@ -328,7 +328,7 @@ function DishCard({ dish }: { dish: Dish & { pantryMatch: number } }) {
     <div className="relative overflow-hidden rounded-2xl bg-card border border-border transition-transform hover:scale-[1.01] active:scale-[0.99] h-[350px]">
       <div className="absolute inset-0 overflow-hidden bg-muted">
         {isImagePath ? (
-          <img src={dish.image} alt={dish.name} className="h-full w-full object-cover" />
+          <img src={asset(dish.image)} alt={dish.name} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center text-6xl">{dish.image}</div>
         )}
@@ -381,7 +381,7 @@ function ItemRow({ item, onAddToCart, onToggleAutoReorder }: { item: GroceryItem
   return (
     <div className={cn("flex items-center gap-3 rounded-2xl px-3 py-3 transition-all", isUrgent && "bg-[#f0883e]/5 border border-[#f0883e]/20")}>
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted overflow-hidden text-2xl">
-        {item.image.startsWith("/") ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : item.image}
+        {item.image.startsWith("/") ? <img src={asset(item.image)} alt={item.name} className="h-full w-full object-cover" /> : item.image}
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium">{item.name}</span>
@@ -430,7 +430,7 @@ function RoutineCard({ routine, onUpdate }: { routine: MealRoutine; onUpdate: (i
     <div className="relative overflow-hidden rounded-3xl" style={{ height: "200px" }}>
       {/* Full-bleed background image */}
       {routine.image ? (
-        <img src={routine.image} alt={routine.mealType} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={asset(routine.image)} alt={routine.mealType} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
         <div className="absolute inset-0" style={{ background: routine.gradient }} />
       )}

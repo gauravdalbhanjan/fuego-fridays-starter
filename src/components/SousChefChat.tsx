@@ -6,7 +6,7 @@ import {
   CameraOff,
   Sparkles,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, asset } from "@/lib/utils";
 import {
   generateChefResponse,
   detectMoodFromCamera,
@@ -68,7 +68,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
       window.dispatchEvent(new CustomEvent("robin-navigate", { detail: "cart" }));
     } else if (stripped.includes("dashboard") || stripped.includes("homepulse") || stripped.includes("home pulse") || stripped.includes("finance")) {
       response = "Taking you to HomePulse.";
-      window.open("/dashboard/index.html", "_blank");
+      window.open(asset("/dashboard/index.html"), "_blank");
     } else if (t.includes("light mode") || t.includes("light theme") || t.includes("turn on lights")) {
       response = "Switching to light mode.";
       window.dispatchEvent(new CustomEvent("robin-theme", { detail: "light" }));
@@ -426,7 +426,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
             }}
             aria-label="Tap to talk to Robin"
           >
-            <img src="/chef-logo.png" alt="Robin" className="h-full w-full object-cover pointer-events-none" draggable={false} />
+            <img src={asset("/chef-logo.png")} alt="Robin" className="h-full w-full object-cover pointer-events-none" draggable={false} />
 
             {/* Voice overlay */}
             {voiceActive && (
@@ -519,7 +519,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
       {/* Header */}
       <header className="flex items-center gap-3 border-b border-[#30363d]/50 px-4 py-3 shrink-0">
         <div className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-[#31a8ff]/30">
-          <img src="/chef-logo.png" alt="Robin" className="h-full w-full object-cover" />
+          <img src={asset("/chef-logo.png")} alt="Robin" className="h-full w-full object-cover" />
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold text-[#e6edf3]">Robin</p>
@@ -589,7 +589,7 @@ export function SousChefChat({ lowStockCount, robinSleepTimeout = 10, voiceKey =
         {state.isTyping && (
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#31a8ff]/15 overflow-hidden">
-              <img src="/chef-logo.png" alt="" className="h-full w-full object-cover" />
+              <img src={asset("/chef-logo.png")} alt="" className="h-full w-full object-cover" />
             </div>
             <div className="flex gap-1 rounded-2xl bg-[#161b22] border border-[#30363d]/50 px-4 py-3">
               <span className="h-2 w-2 rounded-full bg-[#8b949e] animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -652,7 +652,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     <div className={cn("flex gap-2", isChef ? "justify-start" : "justify-end")}>
       {isChef && (
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#31a8ff]/15 overflow-hidden">
-          <img src="/chef-logo.png" alt="" className="h-full w-full object-cover" />
+          <img src={asset("/chef-logo.png")} alt="" className="h-full w-full object-cover" />
         </div>
       )}
       <div
