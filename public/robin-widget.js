@@ -29,12 +29,74 @@ root.id="robin-widget-root";
 root.style.cssText="position:fixed;top:16px;right:16px;z-index:99999;width:170px;user-select:none;touch-action:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;";
 document.body.appendChild(root);
 
+// ── Drag-to-move (pointer events cover mouse on laptop + touch on iPad) ──────
+// Only the square logo acts as the drag handle. A small movement threshold
+// distinguishes a drag from a tap so tapping the logo still starts a call.
+var dragMoved=false;      // set true when a real drag happened; suppresses the click
+var dragging=false;
+var dragStartX=0,dragStartY=0,dragOrigLeft=0,dragOrigTop=0,dragPointerId=null;
+
+// Convert the widget from right-anchored to left/top pixel coordinates so it can
+// be positioned anywhere. Safe to call repeatedly.
+function pinToPixels(){
+  var r=root.getBoundingClientRect();
+  root.style.left=r.left+"px";
+  root.style.top=r.top+"px";
+  root.style.right="auto";
+  root.style.bottom="auto";
+}
+
+function setupDrag(handle){
+  if(!handle)return;
+  handle.style.touchAction="none";
+  handle.addEventListener("pointerdown",function(e){
+    // only primary button / touch
+    if(e.button&&e.button!==0)return;
+    dragging=true;
+    dragMoved=false;
+    dragPointerId=e.pointerId;
+    pinToPixels();
+    var r=root.getBoundingClientRect();
+    dragOrigLeft=r.left;dragOrigTop=r.top;
+    dragStartX=e.clientX;dragStartY=e.clientY;
+    try{handle.setPointerCapture(e.pointerId);}catch(x){}
+  });
+  handle.addEventListener("pointermove",function(e){
+    if(!dragging||e.pointerId!==dragPointerId)return;
+    var dx=e.clientX-dragStartX, dy=e.clientY-dragStartY;
+    if(!dragMoved&&Math.abs(dx)+Math.abs(dy)<6)return; // below threshold = still a tap
+    dragMoved=true;
+    e.preventDefault();
+    var w=root.offsetWidth, h=root.offsetHeight;
+    var nx=Math.min(Math.max(0,dragOrigLeft+dx), window.innerWidth-w);
+    var ny=Math.min(Math.max(0,dragOrigTop+dy), window.innerHeight-h);
+    root.style.left=nx+"px";
+    root.style.top=ny+"px";
+  });
+  function endDrag(e){
+    if(!dragging||e.pointerId!==dragPointerId)return;
+    dragging=false;dragPointerId=null;
+    try{handle.releasePointerCapture(e.pointerId);}catch(x){}
+  }
+  handle.addEventListener("pointerup",endDrag);
+  handle.addEventListener("pointercancel",endDrag);
+}
+
+// Keep the widget on-screen if the window is resized/rotated.
+window.addEventListener("resize",function(){
+  if(root.style.left==="auto"||root.style.left==="")return;
+  var w=root.offsetWidth,h=root.offsetHeight;
+  var l=parseFloat(root.style.left)||0, t=parseFloat(root.style.top)||0;
+  root.style.left=Math.min(Math.max(0,l),window.innerWidth-w)+"px";
+  root.style.top=Math.min(Math.max(0,t),window.innerHeight-h)+"px";
+});
+
 function render(){
   var cBg=callState==="active"?"#bbf7d0":callState==="hold"?"#fefce8":callState==="ending"?"#fecaca":"#c0c0c0";
   var cCol=callState==="active"?"#15803d":callState==="hold"?"#92400e":callState==="ending"?"#dc2626":"#333";
   var dot=callState==="active"?"#22c55e":callState==="hold"?"#f59e0b":callState==="ending"?"#ef4444":"#666";
   var showTranscript=(callState==="active"&&transcript);
-  var html='<div id="rw-logo" style="position:relative;margin:0 auto;width:150px;height:150px;border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.35);cursor:pointer;border:2px solid rgba(255,255,255,0.12);">';
+  var html='<div id="rw-logo" style="position:relative;margin:0 auto;width:150px;height:150px;border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.35);cursor:grab;border:2px solid rgba(255,255,255,0.12);touch-action:none;">';
   html+='<img src="'+RA("/chef-logo.png")+'" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" draggable="false"/>';
   html+='<span style="position:absolute;top:10px;right:10px;width:12px;height:12px;border-radius:50%;background:'+dot+';border:2px solid rgba(0,0,0,0.25);box-shadow:0 0 8px '+dot+';"></span>';
   html+='</div>';
@@ -48,7 +110,8 @@ function render(){
     html+='<p style="font-size:11px;color:#fff;margin:0;line-height:1.4;">'+transcript+'</p></div>';
   }
   root.innerHTML=html;
-  document.getElementById("rw-logo").onclick=function(){if(callState==="idle"){startCall();}};
+  setupDrag(document.getElementById("rw-logo"));
+  document.getElementById("rw-logo").onclick=function(){if(dragMoved){dragMoved=false;return;}if(callState==="idle"){startCall();}};
   document.getElementById("rw-call").onclick=function(){
     if(callState==="idle"){startCall();}
     else if(callState==="active"){callState="hold";transcript="";render();}
