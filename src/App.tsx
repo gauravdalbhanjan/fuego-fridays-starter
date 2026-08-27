@@ -228,8 +228,8 @@ export default function App() {
       {/* Robin widget is now loaded globally via /robin-widget.js */}
 
       {/* Bottom nav — Alexa device style */}
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/95 px-4 py-2 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-md justify-around">
+      <nav className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/95 px-2 py-2 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-md items-stretch">
           {([
             { id: "menu" as NavTab, icon: "⊞", label: "Menu" },
             { id: "inventory" as NavTab, icon: "🛒", label: "Inventory" },
@@ -237,18 +237,18 @@ export default function App() {
             { id: "events" as NavTab, icon: "🔵", label: "Alexa" },
           ]).map((tab) => (
             <button key={tab.id} onClick={() => setActiveNav(tab.id)}
-              className={cn("flex flex-col items-center gap-1 rounded-2xl px-4 py-2 text-xs transition-all",
+              className={cn("relative flex flex-1 flex-col items-center justify-start gap-1 rounded-2xl px-1 py-2 text-xs transition-all",
                 activeNav === tab.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
               )}>
-              <span className="text-lg">{tab.icon}</span>
-              <span className={cn("font-medium", activeNav === tab.id && "text-primary")}>{tab.label}</span>
-              {activeNav === tab.id && <span className="absolute bottom-1 h-0.5 w-6 rounded-full bg-primary shadow-[0_0_4px_#31a8ff]" />}
+              <span className="flex h-6 items-center justify-center text-lg leading-none">{tab.icon}</span>
+              <span className={cn("font-medium leading-none", activeNav === tab.id && "text-primary")}>{tab.label}</span>
+              {activeNav === tab.id && <span className="absolute bottom-0.5 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_4px_#31a8ff]" />}
             </button>
           ))}
           {/* HomePulse button */}
-          <a href="/dashboard/index.html" className="flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-all">
-            <img src="/homepulse-icon.png" alt="HomePulse" className="h-6 w-6 rounded-full object-cover" />
-            <span className="font-medium">HomePulse</span>
+          <a href="/dashboard/index.html" className="relative flex flex-1 flex-col items-center justify-start gap-1 rounded-2xl px-1 py-2 text-xs text-muted-foreground hover:text-foreground transition-all">
+            <span className="flex h-6 items-center justify-center text-lg leading-none" role="img" aria-label="HomePulse">⚡</span>
+            <span className="font-medium leading-none">HomePulse</span>
           </a>
         </div>
       </nav>

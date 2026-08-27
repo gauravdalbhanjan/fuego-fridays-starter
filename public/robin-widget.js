@@ -31,11 +31,11 @@ function render(){
     html+='<p style="font-size:11px;color:#fff;margin:0;line-height:1.4;">'+transcript+'</p></div>';
   }
   root.innerHTML=html;
-  document.getElementById("rw-logo").onclick=function(){if(callState==="idle"){callState="active";render();listen();}};
+  document.getElementById("rw-logo").onclick=function(){if(callState==="idle"){startCall();}};
   document.getElementById("rw-call").onclick=function(){
-    if(callState==="idle"){callState="active";render();listen();}
+    if(callState==="idle"){startCall();}
     else if(callState==="active"){callState="hold";transcript="";render();}
-    else if(callState==="hold"){callState="active";render();listen();}
+    else if(callState==="hold"){startCall();}
   };
   document.getElementById("rw-call").onpointerdown=function(){longPressTimer=setTimeout(function(){callState="ending";transcript="";render();setTimeout(function(){callState="idle";render();},3000);},600);};
   document.getElementById("rw-call").onpointerup=function(){clearTimeout(longPressTimer);};
@@ -43,10 +43,69 @@ function render(){
   document.getElementById("rw-type").onclick=function(){toggleChat();};
 }
 
+var micGranted=false;
+var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+// iOS (incl. Chrome/Edge on iOS, which are all WebKit) has no working Web Speech
+// recognition. On those devices we route voice to the chat's text field so the
+// user can use the keyboard's built-in dictation mic — real, reliable iOS speech.
+var voiceRecognitionUsable=(typeof window.SpeechRecognition!=="undefined"||typeof window.webkitSpeechRecognition!=="undefined")&&!isIOS;
+
+// Turn the call ON immediately (green), then start the best available voice path.
+function startCall(){
+  callState="active";
+  render();
+
+  if(!voiceRecognitionUsable){
+    // iOS path: open chat, focus input, prompt the user to tap the keyboard mic.
+    callState="idle"; // the "call" here just launches voice-typing; no persistent green state needed
+    render();
+    if(!chatOpen)toggleChat();
+    setTimeout(function(){
+      var inp=document.getElementById("rw-input");
+      if(inp){
+        inp.placeholder=isIOS?"Tap the mic on your keyboard to speak…":"Type a message…";
+        inp.focus();
+      }
+      if(isIOS)dictate(); // also attempt native dictation flow (focuses input)
+    },250);
+    return;
+  }
+
+  transcript="Connecting...";
+  render();
+  // Request mic permission from within this user-gesture handler.
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&!micGranted){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      micGranted=true;
+      try{stream.getTracks().forEach(function(tr){tr.stop();});}catch(e){}
+      if(callState==="active")listen();
+    }).catch(function(){
+      if(callState==="active"){transcript="Mic blocked. Enable microphone access in Settings, or use the Type button.";render();}
+    });
+  }else{
+    listen();
+  }
+}
+
 function listen(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){callState="idle";render();return;}
-  var rec=new SR();rec.continuous=false;rec.interimResults=true;rec.lang="en-US";
+  // iOS Safari often lacks reliable SpeechRecognition. Don't drop the call —
+  // keep it active and guide the user to the text chat instead.
+  if(!SR){
+    if(callState==="active"){
+      transcript=isIOS
+        ? "Voice isn't supported in this browser. Tap the Type button to chat by text."
+        : "Voice recognition unavailable here. Tap Type to chat by text.";
+      render();
+    }
+    return;
+  }
+  var rec;
+  try{rec=new SR();}catch(e){
+    if(callState==="active"){transcript="Couldn't start voice. Tap Type to chat by text.";render();}
+    return;
+  }
+  rec.continuous=false;rec.interimResults=true;rec.lang="en-US";
   transcript="Listening...";render();
   rec.onresult=function(e){
     var ft="",it="";
@@ -59,7 +118,14 @@ function listen(){
       transcript="";render();
     }
   };
-  rec.onerror=function(){if(callState==="active")setTimeout(listen,500);};
+  rec.onerror=function(ev){
+    // "not-allowed"/"service-not-allowed" = permission problem; don't loop forever.
+    if(ev&&(ev.error==="not-allowed"||ev.error==="service-not-allowed")){
+      if(callState==="active"){transcript="Mic access denied. Enable it in browser settings, or tap Type.";render();}
+      return;
+    }
+    if(callState==="active")setTimeout(listen,600);
+  };
   rec.onend=function(){if(callState==="active")setTimeout(listen,200);};
   try{rec.start();}catch(x){if(callState==="active")setTimeout(listen,1000);}
 }
@@ -93,13 +159,79 @@ function buildChat(){
   var panel=document.createElement("div");
   panel.id="rw-chat-panel";
   panel.style.cssText="position:fixed;bottom:80px;right:16px;z-index:99998;width:380px;max-width:calc(100vw - 32px);height:400px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);display:flex;flex-direction:column;overflow:hidden;border:1px solid #333;background:#1a1a2e;color:#e6edf3;";
-  panel.innerHTML='<div style="padding:10px 16px;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><img src="/chef-logo.png" style="width:24px;height:24px;border-radius:6px;object-fit:cover;"/><span style="font-weight:600;font-size:13px;">Robin</span><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span></div><div style="display:flex;gap:6px;"><button id="rw-sessions-btn" title="History" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#128196;</button><button id="rw-new-chat" title="New Chat" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#10010;</button><button id="rw-chat-close" style="border:none;background:none;cursor:pointer;font-size:15px;opacity:0.6;color:inherit;">&#10005;</button></div></div><div id="rw-msgs" style="flex:1;overflow-y:auto;padding:12px 16px;font-size:13px;"></div><div style="padding:8px 12px;border-top:1px solid #333;display:flex;gap:8px;"><input id="rw-input" type="text" placeholder="Type a message..." style="flex:1;border:1px solid #444;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;background:#111;color:#fff;"/><button id="rw-send" style="border:none;background:#1a73e8;color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>';
+  panel.innerHTML='<div style="padding:10px 16px;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><img src="/chef-logo.png" style="width:24px;height:24px;border-radius:6px;object-fit:cover;"/><span style="font-weight:600;font-size:13px;">Robin</span><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span></div><div style="display:flex;gap:6px;"><button id="rw-sessions-btn" title="History" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#128196;</button><button id="rw-new-chat" title="New Chat" style="border:none;background:none;cursor:pointer;font-size:13px;opacity:0.6;color:inherit;">&#10010;</button><button id="rw-chat-close" style="border:none;background:none;cursor:pointer;font-size:15px;opacity:0.6;color:inherit;">&#10005;</button></div></div><div id="rw-msgs" style="flex:1;overflow-y:auto;padding:12px 16px;font-size:13px;"></div><div style="padding:8px 12px;border-top:1px solid #333;display:flex;gap:8px;align-items:center;"><button id="rw-mic" title="Speak" style="border:none;background:#2a2a3e;color:#9aa0aa;border-radius:50%;width:32px;height:32px;min-width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg></button><input id="rw-input" type="text" placeholder="Type a message..." style="flex:1;border:1px solid #444;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;background:#111;color:#fff;"/><button id="rw-send" style="border:none;background:#1a73e8;color:#fff;border-radius:50%;width:32px;height:32px;min-width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button></div>';
   document.body.appendChild(panel);
   document.getElementById("rw-chat-close").onclick=function(){toggleChat();};
   document.getElementById("rw-send").onclick=sendMsg;
   document.getElementById("rw-input").onkeydown=function(e){if(e.key==="Enter")sendMsg();};
   document.getElementById("rw-new-chat").onclick=newSession;
   document.getElementById("rw-sessions-btn").onclick=showSessions;
+  document.getElementById("rw-mic").onclick=dictate;
+}
+
+// Voice-to-text dictation into the chat input.
+var dictating=false;
+var dictateRec=null;
+function setMicUI(on,hint){
+  var b=document.getElementById("rw-mic");if(!b)return;
+  b.style.background=on?"#dc2626":"#2a2a3e";
+  b.style.color=on?"#fff":"#9aa0aa";
+  b.title=hint||(on?"Listening... tap to stop":"Speak");
+}
+function dictate(){
+  var inp=document.getElementById("rw-input");if(!inp)return;
+  // On iOS, in-page speech recognition doesn't work. Use the keyboard's native
+  // dictation mic instead: just focus the field and tell the user to tap it.
+  if(!voiceRecognitionUsable){
+    inp.placeholder=isIOS?"Tap the mic on your keyboard to speak…":"Type a message…";
+    inp.focus();
+    setMicUI(false,isIOS?"Use keyboard mic":"Voice unavailable");
+    return;
+  }
+  if(dictating){ // toggle off
+    try{if(dictateRec)dictateRec.stop();}catch(e){}
+    dictating=false;setMicUI(false);return;
+  }
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    inp.placeholder=isIOS?"Tap the mic on your keyboard to speak…":"Voice typing isn't supported here — type instead.";
+    inp.focus();
+    setMicUI(false,"Voice unavailable");
+    return;
+  }
+  // Request mic within the click gesture (needed on iOS Safari).
+  var begin=function(){
+    var rec;
+    try{rec=new SR();}catch(e){setMicUI(false);return;}
+    dictateRec=rec;
+    rec.continuous=false;rec.interimResults=true;rec.lang="en-US";
+    var base=inp.value?inp.value+" ":"";
+    dictating=true;setMicUI(true);
+    rec.onresult=function(e){
+      var txt="";
+      for(var i=0;i<e.results.length;i++){txt+=e.results[i][0].transcript;}
+      inp.value=base+txt;
+    };
+    rec.onerror=function(ev){
+      dictating=false;
+      if(ev&&(ev.error==="not-allowed"||ev.error==="service-not-allowed")){
+        inp.placeholder="Mic blocked — enable it in browser settings.";
+      }
+      setMicUI(false);
+    };
+    rec.onend=function(){dictating=false;setMicUI(false);inp.focus();};
+    try{rec.start();}catch(x){dictating=false;setMicUI(false);}
+  };
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&!micGranted){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      micGranted=true;
+      try{stream.getTracks().forEach(function(tr){tr.stop();});}catch(e){}
+      begin();
+    }).catch(function(){
+      inp.placeholder="Mic blocked — enable it in browser settings.";
+      setMicUI(false);
+    });
+  }else{begin();}
 }
 
 function isDark(){return document.documentElement.classList.contains("dark")||document.body.classList.contains("dark-mode");}

@@ -354,6 +354,18 @@
             transition: box-shadow 0.2s;
         }
         .product-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .product-row.nav-highlight { animation: navHighlight 2s ease; }
+        @keyframes navHighlight {
+            0% { box-shadow: 0 0 0 3px rgba(25,118,210,0.6); }
+            60% { box-shadow: 0 0 0 3px rgba(25,118,210,0.6); }
+            100% { box-shadow: 0 0 0 3px rgba(25,118,210,0); }
+        }
+        body.dark-mode .product-row.nav-highlight { animation: navHighlightDark 2s ease; }
+        @keyframes navHighlightDark {
+            0% { box-shadow: 0 0 0 3px rgba(100,181,246,0.7); }
+            60% { box-shadow: 0 0 0 3px rgba(100,181,246,0.7); }
+            100% { box-shadow: 0 0 0 3px rgba(100,181,246,0); }
+        }
         .product-row.row-at-risk { border-left-color: #f44336; background: #fff5f5; }
         .product-row.row-watch { border-left-color: #ff9800; background: #fffcf0; }
         .product-row.row-good { border-left-color: #4caf50; background: #f8fff8; }
@@ -513,7 +525,7 @@
     <!-- App Bar -->
     <div class="app-bar">
         <a href="/" class="material-icons app-icon" style="color:#fff;text-decoration:none;">apps</a>
-        <span class="app-title">HomePulse</span>
+        <span class="app-title">Menu</span>
         <div class="spacer"></div>
         <div class="toolbar-icons">
             <span class="material-icons">dashboard</span>
@@ -544,15 +556,20 @@
             </div>
 
             <div class="nav-section-header">
-                <span class="material-icons">apps</span> All Categories
+                <span class="material-icons">apps</span> All Products
                 <span class="material-icons expand">expand_less</span>
             </div>
-            <div class="nav-sub-item">Energy & Utilities</div>
-            <div class="nav-sub-item">Grocery & Food</div>
-            <div class="nav-sub-item">Cleaning Supplies</div>
-            <div class="nav-sub-item">Security & Cameras</div>
-            <div class="nav-sub-item">Smart Devices</div>
-            <div class="nav-sub-item">Calendar & Routine</div>
+            <div class="nav-sub-item" data-nav="budget-planner">Budget Planner</div>
+            <div class="nav-sub-item" data-nav="budget-tracker">Budget Tracker</div>
+            <div class="nav-sub-item" data-nav="finhome">FinHome</div>
+            <div class="nav-sub-item" data-nav="ai">AI</div>
+            <div class="nav-sub-item" data-nav="constellation">Constellation</div>
+            <div class="nav-sub-item" data-nav="calendar">Calendar</div>
+            <div class="nav-sub-item" data-nav="energy">Energy Consumption</div>
+            <div class="nav-sub-item" data-nav="grocery">Grocery &amp; Food</div>
+            <div class="nav-sub-item" data-nav="cleaning">Cleaning Supplies</div>
+            <div class="nav-sub-item" data-nav="security">Security Feed</div>
+            <div class="nav-sub-item" data-nav="smart-devices">Smart Devices</div>
         </div>
         <div class="sidebar-footer">
             <div class="nav-item">
@@ -745,8 +762,8 @@
                 </div>
                 <div class="right">
                     <div class="tab-group">
-                        <button class="tab active" id="tabFavorites">Favorites</button>
-                        <button class="tab" id="tabAllProducts">All Products</button>
+                        <button class="tab" id="tabFavorites">Favorites</button>
+                        <button class="tab active" id="tabAllProducts">All Products</button>
                     </div>
                     <fieldset class="sort-fieldset">
                         <legend>Sort By</legend>
@@ -1427,7 +1444,7 @@
         });
 
         // Favorites / All Products Tab Switching
-        let activeTab = 'favorites';
+        let activeTab = 'all';
         const tabFavorites = document.getElementById('tabFavorites');
         const tabAllProducts = document.getElementById('tabAllProducts');
 
@@ -1807,6 +1824,38 @@
                     });
                 }
             }
+        });
+
+        // ===== Sidebar "All Products" → open details for every product =====
+        // Products with a dedicated page navigate to it; the rest scroll to and
+        // highlight their card on the dashboard so details are always reachable.
+        function openProductDetails(productId) {
+            if (detailLinks[productId]) {
+                window.location.href = detailLinks[productId];
+                return;
+            }
+            // Ensure the card is visible: switch to All Products view first.
+            if (typeof activeTab !== 'undefined' && activeTab !== 'all') {
+                activeTab = 'all';
+                if (tabAllProducts) tabAllProducts.classList.add('active');
+                if (tabFavorites) tabFavorites.classList.remove('active');
+                applyTabFilter();
+            }
+            const card = document.querySelector('.product-row[data-product="' + productId + '"]');
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.remove('nav-highlight');
+                // reflow to restart the animation
+                void card.offsetWidth;
+                card.classList.add('nav-highlight');
+                setTimeout(function() { card.classList.remove('nav-highlight'); }, 2100);
+            }
+        }
+        document.querySelectorAll('.nav-sub-item[data-nav]').forEach(function(item) {
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', function() {
+                openProductDetails(item.getAttribute('data-nav'));
+            });
         });
 
         // Auto-sort product rows by severity: red (at-risk) → orange (watch) → green (good)
